@@ -18,7 +18,7 @@ import { formatSourceDSTU, resolveHeadingStyle, resolveBodyStyle } from '../../t
 import type { FormulaImage } from '../useFormulaImage'
 import { cmToTwip, ptToHalfPt } from './units'
 import { baseRun, inlineRuns } from './text-runs'
-import { bodyParagraph, emptyParagraph, captionParagraph, ALIGN4_MAP } from './paragraphs'
+import { bodyParagraph, emptyParagraph, emptyParagraphs, captionParagraph, ALIGN4_MAP } from './paragraphs'
 import type { Counters } from './counters'
 import { resolveReference, tocBookmarkId } from './counters'
 import { buildFormulaParagraph } from './formula'
@@ -242,6 +242,7 @@ export function buildBlock(
 
     if (block.caption) {
       result.push(captionParagraph(`${s.formulaPrefix} ${num} – ${block.caption}`, fCfg, fAlign))
+      result.push(...emptyParagraphs(cfg, block.spaceAfterCaption ?? 1))
     }
     if (!block.noTrailingSpace) result.push(emptyParagraph(cfg))
 
@@ -314,6 +315,7 @@ export function buildBlock(
     }
     result.push(emptyParagraph(cfg))
     result.push(captionParagraph(`${s.listingPrefix} ${num} – ${block.caption}`, cfg))
+    result.push(...emptyParagraphs(cfg, block.spaceAfterCaption ?? 1))
     result.push(
       new Paragraph({
         children: [new TextRun({
@@ -379,6 +381,7 @@ export function buildBlock(
         spacing: { line: Math.round(capCfg.lineSpacing * 240), lineRule: 'auto' as never },
       })
     )
+    result.push(...emptyParagraphs(cfg, block.spaceAfterCaption ?? 1))
     if (!block.noTrailingSpace) result.push(emptyParagraph(cfg))
 
     return result
@@ -489,6 +492,7 @@ export function buildBlock(
         result.push(emptyParagraph(cfg))
         result.push(captionParagraph(`Продовження таблиці ${num} – ${block.caption}`, cfg, AlignmentType.RIGHT))
       }
+      result.push(...emptyParagraphs(cfg, block.spaceAfterCaption ?? 1))
       result.push(new Table({
         rows: [makeHeaderRow(), ...chunk.map(makeDataRow)],
         width: tableWidth,

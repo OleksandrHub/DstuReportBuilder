@@ -958,15 +958,20 @@ a:focus-visible {
   max-width: 140px;
 }
 .style-number {
-  width: 46px;
+  width: 60px;
   background: var(--color-input-bg);
   border: 1px solid var(--color-border);
   color: var(--color-text);
-  border-radius: 4px;
-  padding: 2px 4px;
-  font-size: 12px;
+  border-radius: var(--radius);
+  padding: 4px 8px;
+  font-size: 13px;
   text-align: center;
+  font-family: var(--font-ui);
+  outline: none;
+  transition: var(--transition);
 }
+.style-number:focus { border-color: var(--color-accent); }
+.style-label { font-size: 11px; color: var(--color-text-muted); }
 .style-color {
   width: 28px;
   height: 24px;
@@ -1573,6 +1578,14 @@ h3.preview-heading { font-size: 1em; }
   cursor: pointer;
 }
 .btn-small:hover { opacity: 0.85; }
+
+/* Space after caption control */
+.space-after-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
 
 /* Table column width controls */
 .col-width-row {

@@ -24,6 +24,10 @@ export function emptyParagraph(cfg: FontConfig): Paragraph {
   })
 }
 
+export function emptyParagraphs(cfg: FontConfig, count: number): Paragraph[] {
+  return Array.from({ length: Math.max(0, count) }, () => emptyParagraph(cfg))
+}
+
 export function captionParagraph(text: string, cfg: FontConfig, align: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT): Paragraph {
   // Left-aligned captions get the document's first-line indent (like body text,
   // e.g. "Таблиця 1 – ..."). Right/center captions (e.g. continuation) don't.

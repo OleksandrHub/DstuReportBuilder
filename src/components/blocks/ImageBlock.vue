@@ -159,6 +159,18 @@ async function onFileChange(e: Event) {
         @change="emit('update', { noTrailingSpace: ($event.target as HTMLInputElement).checked })" />
       <span>Без порожнього рядка знизу</span>
     </label>
+    <div class="space-after-row">
+      <span class="style-label">Рядків після підпису:</span>
+      <input
+        type="number"
+        class="style-number"
+        min="0" max="5" step="1"
+        :value="props.block.spaceAfterCaption ?? 1"
+        @input="emit('update', { spaceAfterCaption: parseInt(($event.target as HTMLInputElement).value) || 1 })"
+        title="Кількість порожніх рядків між підписом і рисунком"
+        aria-label="Рядків після підпису"
+      />
+    </div>
 
     <p class="block-hint">Форматування підпису:</p>
     <BlockStyleRow :block="props.block" default-align="center" :show-indent="false" @update="emit('update', $event)" />

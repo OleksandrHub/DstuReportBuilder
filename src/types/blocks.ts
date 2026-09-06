@@ -95,6 +95,7 @@ export interface CodeBlock {
   bold?: boolean
   color?: string
   noTrailingSpace?: boolean
+  spaceAfterCaption?: number // empty lines after caption (default 1)
 }
 
 export interface ImageBlock {
@@ -114,6 +115,7 @@ export interface ImageBlock {
   fontFamily?: string
   lineSpacing?: number
   color?: string
+  spaceAfterCaption?: number // empty lines after caption (default 1)
 }
 
 export interface TableCell {
@@ -146,6 +148,7 @@ export interface TableBlock {
   fullWidth?: boolean       // stretch to content width (default true)
   columnWidths?: number[]   // relative width per column in %; empty = equal
   noTrailingSpace?: boolean
+  spaceAfterCaption?: number // empty lines after caption (default 1)
 }
 
 export interface FormulaBlock {
@@ -164,6 +167,7 @@ export interface FormulaBlock {
   fontFamily?: string
   lineSpacing?: number
   color?: string
+  spaceAfterCaption?: number // empty lines after caption (default 1)
 }
 
 export interface SourcesBlock {

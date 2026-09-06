@@ -179,6 +179,19 @@ function openMdWithCurrent() {
       <span>Без порожнього рядка знизу</span>
     </label>
 
+    <div class="space-after-row">
+      <span class="style-label">Рядків після підпису:</span>
+      <input
+        type="number"
+        class="style-number"
+        min="0" max="5" step="1"
+        :value="props.block.spaceAfterCaption ?? 1"
+        @input="emit('update', { spaceAfterCaption: parseInt(($event.target as HTMLInputElement).value) || 1 })"
+        title="Кількість порожніх рядків між підписом і таблицею"
+        aria-label="Рядків після підпису"
+      />
+    </div>
+
     <div class="col-width-row">
       <span class="style-label">Ширина стовпців (%):</span>
       <div class="col-width-inputs">

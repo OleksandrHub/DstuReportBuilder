@@ -84,6 +84,18 @@ watch(() => props.block.latex, renderPreview)
         placeholder="Назва формули"
       />
     </div>
+    <div class="space-after-row">
+      <span class="style-label">Рядків після підпису:</span>
+      <input
+        type="number"
+        class="style-number"
+        min="0" max="5" step="1"
+        :value="props.block.spaceAfterCaption ?? 1"
+        @input="emit('update', { spaceAfterCaption: parseInt(($event.target as HTMLInputElement).value) || 1 })"
+        title="Кількість порожніх рядків між підписом і формулою"
+        aria-label="Рядків після підпису"
+      />
+    </div>
 
     <label class="ref-toggle">
       <input
