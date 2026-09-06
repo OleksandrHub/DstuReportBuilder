@@ -20,52 +20,118 @@ import {
 } from '../types/document'
 import { generateId, emptySourceEntry, deepCloneTitleBlocks, createDocument } from './factories'
 import {
-  ACTIVE_DOC_KEY,
-  loadTemplatesFromStorage,
-  saveTemplatesToStorage,
-  loadDataTemplatesFromStorage,
-  saveDataTemplatesToStorage,
-  loadFromStorage,
-  saveToStorage,
+  loadState,
+  saveState,
+  describeStorageError,
+  type StorageBackend,
+  type PersistedState,
 } from './storage'
 import { migrateDocuments } from './migrations'
 import { cloneBlockWithNewIds, findListItem } from './block-utils'
 
 export const useReportStore = defineStore('report', () => {
-  const rawDocs = loadFromStorage()
-  migrateDocuments(rawDocs)
+  const documents = ref<ReportDocument[]>([])
+  const activeDocumentId = ref<string | null>(null)
+  const titleTemplates = ref<TitlePageTemplate[]>([])
+  const titleDataTemplates = ref<TitleDataTemplate[]>([])
 
-  const documents = ref<ReportDocument[]>(rawDocs)
-  const activeDocumentId = ref<string | null>(localStorage.getItem(ACTIVE_DOC_KEY))
-  const titleTemplates = ref<TitlePageTemplate[]>(loadTemplatesFromStorage())
-  const titleDataTemplates = ref<TitleDataTemplate[]>(loadDataTemplatesFromStorage())
+  // --- Async persistence state (IndexedDB-first, see ./storage.ts) ---
+  const ready = ref(false)
+  const storageBackend = ref<StorageBackend>('indexeddb')
+  const storageError = ref<string | null>(null)
+  const lastSavedAt = ref<string | null>(null)
 
-  if (documents.value.length === 0) {
-    const first = createDocument('Лабораторна робота №1')
-    documents.value.push(first)
-    activeDocumentId.value = first.id
+  let persistTimer: ReturnType<typeof setTimeout> | null = null
+  let persistInFlight = false
+  let persistQueued = false
+
+  function currentState(): PersistedState {
+    return {
+      documents: documents.value,
+      titleTemplates: titleTemplates.value,
+      titleDataTemplates: titleDataTemplates.value,
+      activeDocumentId: activeDocumentId.value,
+    }
   }
 
-  if (activeDocumentId.value && !documents.value.find(d => d.id === activeDocumentId.value)) {
-    activeDocumentId.value = documents.value[0]?.id ?? null
+  async function persistNow() {
+    if (persistInFlight) {
+      persistQueued = true
+      return
+    }
+    persistInFlight = true
+    try {
+      await saveState(currentState(), storageBackend.value)
+      lastSavedAt.value = new Date().toISOString()
+      storageError.value = null
+    } catch (e) {
+      storageError.value = describeStorageError(e)
+    } finally {
+      persistInFlight = false
+      if (persistQueued) {
+        persistQueued = false
+        schedulePersist()
+      }
+    }
   }
 
-  watch(titleTemplates, (t) => saveTemplatesToStorage(t), { deep: true })
-  watch(titleDataTemplates, (t) => saveDataTemplatesToStorage(t), { deep: true })
+  function schedulePersist() {
+    if (!ready.value) return
+    if (persistTimer) clearTimeout(persistTimer)
+    // Debounce: deep watchers fire on every keystroke; IndexedDB writes of
+    // large documents are async and must not block typing.
+    persistTimer = setTimeout(() => void persistNow(), 500)
+  }
+
+  async function initStore() {
+    try {
+      const { state, backend } = await loadState()
+      storageBackend.value = backend
+      migrateDocuments(state.documents)
+      documents.value = state.documents
+      titleTemplates.value = state.titleTemplates
+      titleDataTemplates.value = state.titleDataTemplates
+
+      if (documents.value.length === 0) {
+        const first = createDocument('Лабораторна робота №1')
+        documents.value.push(first)
+        activeDocumentId.value = first.id
+      } else if (state.activeDocumentId && documents.value.some(d => d.id === state.activeDocumentId)) {
+        activeDocumentId.value = state.activeDocumentId
+      } else {
+        activeDocumentId.value = documents.value[0]?.id ?? null
+      }
+    } catch (e) {
+      // Total storage failure (e.g. blocked IDB + no localStorage): keep the
+      // app usable in-memory and show the error banner.
+      storageError.value = describeStorageError(e)
+      if (documents.value.length === 0) {
+        const first = createDocument('Лабораторна робота №1')
+        documents.value.push(first)
+        activeDocumentId.value = first.id
+      }
+    } finally {
+      ready.value = true
+      schedulePersist()
+    }
+  }
+
+  // Kick off async load immediately; components render a loading state
+  // until `ready` becomes true.
+  void initStore()
 
   const activeDocument = computed<ReportDocument | null>(() =>
     documents.value.find(d => d.id === activeDocumentId.value) ?? null
   )
 
+  // Persist everything (documents + templates + active id) with debounce.
+  // Guards on `ready` so the initial async load doesn't trigger a write
+  // before state is populated (initStore schedules one persist itself).
   watch(
-    documents,
-    (docs) => saveToStorage(docs),
-    { deep: true }
+    [documents, titleTemplates, titleDataTemplates, activeDocumentId],
+    () => schedulePersist(),
+    { deep: true },
   )
-
-  watch(activeDocumentId, (id) => {
-    if (id) localStorage.setItem(ACTIVE_DOC_KEY, id)
-  })
 
   function touchActive() {
     const doc = activeDocument.value
@@ -840,6 +906,12 @@ export const useReportStore = defineStore('report', () => {
     documents,
     activeDocumentId,
     activeDocument,
+    ready,
+    storageBackend,
+    storageError,
+    lastSavedAt,
+    /** Force an immediate persist (used by the error banner's "retry" button). */
+    saveNow: () => void persistNow(),
     titleTemplates,
     createNewDocument,
     duplicateDocument,

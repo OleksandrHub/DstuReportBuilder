@@ -17,8 +17,10 @@ A Vue 3 web app for composing academic lab reports formatted to the Ukrainian
   and DSTU-compliant captions/numbering. Formulas render via KaTeX → PNG so they
   display in Word, OnlyOffice, and the in-app preview.
 - **Live preview** — the generated `.docx` is rendered in-browser by SuperDoc.
-- **Local persistence** — all documents and templates are saved to `localStorage`;
-  old documents are migrated forward on load.
+- **Local persistence** — all documents and templates are saved to IndexedDB
+  (legacy `localStorage` data is migrated automatically on first load);
+  old documents are migrated forward on load. Uploaded images are downscaled
+  on import to keep storage small.
 
 ## Getting started
 

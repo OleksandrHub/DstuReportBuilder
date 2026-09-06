@@ -138,6 +138,8 @@ watch(doc, scheduleRender, { deep: true })
       </div>
 
       <div class="panel-body">
+        <div v-if="!store.ready" class="empty-blocks-hint">⏳ Завантаження даних зі сховища…</div>
+        <template v-else>
         <TitlePageEditor v-if="leftTab === 'titlepage'" />
         <TitleTemplateEditor v-else-if="leftTab === 'titleblocks'" />
         <SettingsEditor v-else-if="leftTab === 'settings'" />
@@ -297,10 +299,12 @@ watch(doc, scheduleRender, { deep: true })
             </button>
           </div>
         </div>
+        </template>
       </div>
 
       <div class="panel-footer">
-        <button class="btn-export" @click="handleExport">⬇ Завантажити .docx</button>
+        <div v-if="store.storageError" class="footer-storage-error" role="alert">⚠ Не вдалося зберегти. Дані лише в памʼяті.</div>
+        <button class="btn-export" :disabled="!store.ready" @click="handleExport">⬇ Завантажити .docx</button>
       </div>
     </aside>
 

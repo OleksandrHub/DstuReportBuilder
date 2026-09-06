@@ -7,15 +7,21 @@ Everything is client-side — no backend.
 ## Data flow
 
 ```
-localStorage ──load+migrate──▶ Pinia store ──▶ editor components (edit blocks)
-                                   │
-                                   ▼
-                        useDocxExport(doc) ──▶ docx Blob ──▶ download
-                                   │
-                                   └──(preview=true)──▶ Blob ──▶ SuperDoc preview
+IndexedDB ──load+migrate──▶ Pinia store ──▶ editor components (edit blocks)
+    ▲ (async, 500 ms debounce)  │
+    │                           ▼
+    └──────────── save ◀── useDocxExport(doc) ──▶ docx Blob ──▶ download
+                                    │
+                                    └──(preview=true)──▶ Blob ──▶ SuperDoc preview
 ```
 
-The store auto-saves to `localStorage` on every change (deep watchers).
+The store loads asynchronously (`ready` flag gates the UI) and auto-saves to
+**IndexedDB** (quota: hundreds of MB) with a 500 ms debounce after each change
+batch. Legacy `localStorage` payloads are migrated into IndexedDB on first load
+and then deleted to free the ~5 MB quota; `localStorage` remains only as a
+fallback when IndexedDB is unavailable. See `stores/db.ts` (promise wrapper),
+`stores/storage.ts` (`loadState`/`saveState`), and the `ready`/`storageBackend`/
+`storageError` fields on the report store.
 
 ## Module layout
 
@@ -34,9 +40,10 @@ The store auto-saves to `localStorage` on every change (deep watchers).
 ### `src/stores/` — state + persistence
 | Module | Contents |
 |--------|----------|
-| `report.ts` | The Pinia store: reactive state + all actions (document/block/title CRUD). |
+| `report.ts` | The Pinia store: reactive state + all actions (document/block/title CRUD). Async init (`ready` flag); debounced persist. |
 | `factories.ts` | Pure factories: `generateId`, `createDocument`, `emptySourceEntry`. |
-| `storage.ts` | `localStorage` load/save adapters + keys. |
+| `db.ts` | Minimal promise-based IndexedDB key-value wrapper (no deps). |
+| `storage.ts` | Async `loadState`/`saveState`: IndexedDB-first, one-time migration from legacy `localStorage` keys, localStorage fallback. |
 | `migrations.ts` | `migrateDocuments()` — backfills new fields on old saved docs. |
 | `block-utils.ts` | Pure block helpers: `cloneBlockWithNewIds`, `findListItem`. |
 

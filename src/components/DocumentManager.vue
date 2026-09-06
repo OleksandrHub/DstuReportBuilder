@@ -8,6 +8,7 @@ const renamingId = ref<string | null>(null)
 const renameValue = ref('')
 
 function startCreate() {
+  if (!store.ready) return
   const name = newDocName.value.trim() || `Лабораторна робота №${store.documents.length + 1}`
   store.createNewDocument(name)
   newDocName.value = ''
@@ -36,7 +37,8 @@ function confirmDelete(id: string, name: string) {
   <div class="doc-manager">
     <h3 class="section-title">Мої роботи</h3>
 
-    <div class="doc-list">
+    <div v-if="!store.ready" class="empty-blocks-hint">⏳ Завантаження…</div>
+    <div v-else class="doc-list">
       <div
         v-for="doc in store.documents"
         :key="doc.id"
@@ -73,9 +75,10 @@ function confirmDelete(id: string, name: string) {
         class="field-input"
         v-model="newDocName"
         placeholder="Назва нової роботи..."
+        :disabled="!store.ready"
         @keydown.enter="startCreate"
       />
-      <button class="btn-primary" @click="startCreate">+ Нова</button>
+      <button class="btn-primary" :disabled="!store.ready" @click="startCreate">+ Нова</button>
     </div>
   </div>
 </template>
