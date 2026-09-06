@@ -116,9 +116,6 @@ const filteredBlocks = computed(() => {
   const blocks = doc.value?.blocks ?? []
   return blocks.filter(matchesBlock)
 })
-function filterBlocks() {
-  // Triggers reactivity re-evaluation via blockSearch ref.
-}
 
 function toggleBlockCollapse(id: string) {
   collapsedBlocks.value[id] = !collapsedBlocks.value[id]
@@ -322,10 +319,7 @@ watch(mobilePane, (pane) => {
         <SettingsEditor v-else-if="leftTab === 'settings'" />
 
         <div v-else-if="leftTab === 'blocks'" class="blocks-editor">
-          <div v-if="doc && doc.blocks.length === 0" class="empty-blocks-hint">
-            Документ порожній. Додай перший блок нижче.
-          </div>
-
+          <h3 class="section-title">📄 Основний контент</h3>
           <template v-if="doc">
             <div class="blocks-search">
               <input
@@ -390,8 +384,6 @@ watch(mobilePane, (pane) => {
                     <span class="collapse-summary">{{ blockSummary(block) }}</span>
                   </button>
                   <div class="collapse-mini">
-                    <button @click="store.moveBlock(block.id, 'up')" title="Перемістити вгору" aria-label="Перемістити вгору">↑</button>
-                    <button @click="store.moveBlock(block.id, 'down')" title="Перемістити вниз" aria-label="Перемістити вниз">↓</button>
                     <button
                       :class="{ toggled: moveMenuFor === block.id }"
                       @click="moveMenuFor = moveMenuFor === block.id ? null : block.id"
@@ -444,8 +436,7 @@ watch(mobilePane, (pane) => {
           </div>
         </div>
         <div v-else-if="leftTab === 'tools'" class="tools-tab">
-          <h3 class="section-title">Інструменти тексту</h3>
-          <TextToolsBar expanded />
+          <TextToolsBar />
         </div>
         </template>
       </div>

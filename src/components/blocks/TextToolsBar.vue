@@ -2,10 +2,7 @@
 import { ref } from 'vue'
 import { useReportStore } from '../../stores/report'
 
-const props = withDefaults(defineProps<{ expanded?: boolean }>(), { expanded: false })
-
 const store = useReportStore()
-const open = ref(props.expanded)
 const findText = ref('')
 const replaceText = ref('')
 const caseSensitive = ref(false)
@@ -21,7 +18,6 @@ function doDash() {
   status.value = n > 0 ? `Виправлено тире в ${n} полях` : 'Довгих тире не знайдено'
 }
 
-// --- Converter: input → output ---
 const inputText = ref('')
 const outputText = ref('')
 const copied = ref(false)
@@ -34,7 +30,6 @@ function toLower() {
   outputText.value = inputText.value.toLowerCase()
 }
 
-// Escape inline markers so they render literally (e.g. ___ → \_\_\_).
 function escapeMarkers() {
   outputText.value = inputText.value.replace(/([*_`\\{}])/g, '\\$1')
 }
@@ -48,52 +43,76 @@ async function copyOutput() {
 }
 </script>
 
+<style scoped>
+.text-tools { display: flex; flex-direction: column; gap: 6px; }
+.tool-section { display: flex; flex-direction: column; gap: 10px; }
+.tool-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ref-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+</style>
+
 <template>
   <div class="text-tools">
-    <button v-if="!expanded" class="text-tools-toggle" @click="open = !open">
-      {{ open ? '✕ Інструменти тексту' : '🛠 Інструменти тексту' }}
-    </button>
-    <div v-if="open || expanded" class="text-tools-panel">
-      <div class="text-tools-row">
-        <input class="block-input" v-model="findText" placeholder="Знайти" />
-        <input class="block-input" v-model="replaceText" placeholder="Замінити на" />
+    <h3 class="section-title">🛠 Інструменти тексту</h3>
+
+    <section class="tool-section">
+      <h4 class="subsection-title">Пошук і заміна</h4>
+      <div class="field-group">
+        <label>Знайти</label>
+        <input class="field-input" v-model="findText" placeholder="Текст для пошуку…" />
+      </div>
+      <div class="field-group">
+        <label>Замінити на</label>
+        <input class="field-input" v-model="replaceText" placeholder="Новий текст…" />
       </div>
       <label class="ref-toggle">
         <input type="checkbox" v-model="caseSensitive" />
         <span>Враховувати регістр</span>
       </label>
-      <div class="text-tools-row">
-        <button class="btn-small" @click="doReplace">Замінити в усьому документі</button>
-        <button class="btn-small" @click="doDash" title="— → –" aria-label="— → –">— → – (тире)</button>
+      <div class="tool-actions">
+        <button class="btn-sm btn-accent" @click="doReplace">↻ Замінити в документі</button>
+        <button class="btn-sm" @click="doDash" title="— → –" aria-label="— → –">— → –</button>
       </div>
       <p v-if="status" class="block-hint">{{ status }}</p>
+    </section>
 
-      <hr class="text-tools-sep" />
-
-      <label class="block-hint">Перетворювач (вставка → результат):</label>
-      <textarea
-        class="block-textarea"
-        v-model="inputText"
-        rows="4"
-        placeholder="Вставте текст сюди…"
-      />
-      <div class="text-tools-row">
-        <button class="btn-small" @click="toUpper" title="усі літери великі" aria-label="усі літери великі">текст → ВЕЛИКІ</button>
-        <button class="btn-small" @click="toLower" title="усі літери малі" aria-label="усі літери малі">ТЕКСТ → малі</button>
-        <button class="btn-small" @click="escapeMarkers" title="\\ перед * _ ` { }" aria-label="\\ перед * _ ` { }">Екранувати маркери</button>
+    <section class="tool-section">
+      <h4 class="subsection-title">Регістр</h4>
+      <div class="field-group">
+        <label>Вхідний текст</label>
+        <textarea
+          class="field-textarea"
+          v-model="inputText"
+          rows="4"
+          placeholder="Вставте текст сюди…"
+        />
       </div>
-      <textarea
-        class="block-textarea"
-        :value="outputText"
-        rows="4"
-        readonly
-        placeholder="Результат…"
-      />
-      <div class="text-tools-row">
-        <button class="btn-small" @click="copyOutput" :disabled="!outputText">
-          {{ copied ? '✓ Скопійовано' : '⎘ Копіювати результат' }}
+      <div class="tool-actions">
+        <button class="btn-sm" @click="toUpper">Усі великі</button>
+        <button class="btn-sm" @click="toLower">Усі малі</button>
+        <button class="btn-sm" @click="escapeMarkers">Екранувати * _ { }</button>
+      </div>
+      <div class="field-group">
+        <label>Результат</label>
+        <textarea
+          class="field-textarea"
+          :value="outputText"
+          rows="4"
+          readonly
+          placeholder="Результат зʼявиться тут…"
+        />
+      </div>
+      <div class="tool-actions">
+        <button class="btn-sm" @click="copyOutput" :disabled="!outputText">
+          {{ copied ? '✓ Скопійовано' : '⎘ Копіювати' }}
         </button>
       </div>
-    </div>
+    </section>
   </div>
 </template>

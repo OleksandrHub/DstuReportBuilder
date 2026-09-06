@@ -21,8 +21,8 @@ import {
   DEFAULT_TITLE_TEMPLATE,
   DEFAULT_HEADING_STYLES,
   DEFAULT_BODY_TEXT,
-  parseMarkdownTable,
-} from '../types/document'
+} from '../types/defaults'
+import { parseMarkdownTable, parseMarkdownList } from '../types/markdown'
 import { generateId, emptySourceEntry, deepCloneTitleBlocks, createDocument } from './factories'
 import {
   loadState,
@@ -926,6 +926,20 @@ export const useReportStore = defineStore('report', () => {
     return true
   }
 
+  function importMarkdownList(blockId: string, md: string): boolean {
+    const doc = activeDocument.value
+    if (!doc) return false
+    const block = findBlockById(blockId)
+    if (!block || block.type !== 'list') return false
+    const parsed = parseMarkdownList(md)
+    if (!parsed || parsed.items.length === 0) return false
+    block.ordered = parsed.ordered
+    block.introText = ''
+    block.items = parsed.items.map(text => ({ id: generateId(), text }))
+    touchActive()
+    return true
+  }
+
   function toggleTableRowSplit(blockId: string, rowId: string) {
     const doc = activeDocument.value
     if (!doc) return
@@ -1415,6 +1429,7 @@ export const useReportStore = defineStore('report', () => {
     setTableColumnWidth,
     resetTableColumnWidths,
     importMarkdownTable,
+    importMarkdownList,
     getBlockIndex,
     addTitleBlock,
     addTitleContentBlock,

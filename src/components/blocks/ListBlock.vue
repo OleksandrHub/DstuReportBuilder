@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import type { ListBlock } from '../../types/document'
 import { useReportStore } from '../../stores/report'
 import MarkerHint from './MarkerHint.vue'
@@ -17,6 +18,32 @@ const emit = defineEmits<{
 }>()
 
 const store = useReportStore()
+
+// --- Markdown import ---
+const showMd = ref(false)
+const mdText = ref('')
+const mdError = ref('')
+
+function applyMarkdown() {
+  mdError.value = ''
+  const ok = store.importMarkdownList(props.block.id, mdText.value)
+  if (!ok) {
+    mdError.value = 'Не вдалося розпізнати список. Перевірте формат: - пункт або 1. пункт'
+    return
+  }
+  showMd.value = false
+  mdText.value = ''
+}
+
+const currentMarkdown = computed(() => {
+  const prefix = props.block.ordered ? '1. ' : '- '
+  return props.block.items.map(i => `${prefix}${i.text}`).join('\n')
+})
+
+function loadCurrentMarkdown() {
+  mdText.value = currentMarkdown.value
+  mdError.value = ''
+}
 </script>
 
 <template>
@@ -88,6 +115,29 @@ const store = useReportStore()
     </button>
     <p class="block-hint">⤵ — додати підпункт</p>
     <MarkerHint />
+
+    <div class="md-table-toolbar">
+      <button
+        class="btn-sm"
+        type="button"
+        @click="showMd = !showMd; if (showMd) loadCurrentMarkdown()"
+        :title="showMd ? 'Сховати Markdown' : 'Імпорт/експорт Markdown'"
+      >{{ showMd ? '✕ Сховати Markdown' : '⇄ Markdown' }}</button>
+    </div>
+    <div v-if="showMd" class="md-import-panel">
+      <textarea
+        v-model="mdText"
+        class="field-textarea"
+        rows="6"
+        placeholder="- Пункт 1&#10;- Пункт 2&#10;або&#10;1. Перший&#10;2. Другий"
+        aria-label="Markdown список"
+      ></textarea>
+      <div class="md-import-actions">
+        <button class="btn-sm btn-accent" type="button" @click="applyMarkdown()" :disabled="!mdText.trim()">Застосувати</button>
+        <button class="btn-sm" type="button" @click="loadCurrentMarkdown()" :disabled="!currentMarkdown" title="Перезаписати з поточного списку" aria-label="Перезаписати з поточного списку">↻ Зі списку</button>
+      </div>
+      <div v-if="mdError" class="block-hint md-error">{{ mdError }}</div>
+    </div>
   </div>
 </template>
 

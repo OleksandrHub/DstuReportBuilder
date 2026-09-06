@@ -153,6 +153,8 @@ function onImportFile(e: Event) {
 
 <template>
   <div v-if="doc" class="title-tpl-editor">
+    <h3 class="section-title">📰 Макет титульної сторінки</h3>
+
     <div class="tpl-toolbar">
       <button class="btn-sm" @click="store.resetTitleTemplate()" title="Скинути макет до стандартного" aria-label="Скинути макет до стандартного">↺ Скинути</button>
       <button class="btn-sm btn-accent" @click="showSavePrompt = !showSavePrompt" title="Зберегти поточний макет як шаблон" aria-label="Зберегти поточний макет як шаблон">💾 Зберегти шаблон</button>
