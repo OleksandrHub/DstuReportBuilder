@@ -4,9 +4,11 @@ import DocumentManager from './components/DocumentManager.vue'
 import Toast from './components/Toast.vue'
 import { RouterView } from 'vue-router'
 import { useReportStore } from './stores/report'
+import { useMobilePane } from './composables/useMobilePane'
 
 const sidebarOpen = ref(false)
 const store = useReportStore()
+const { mobilePane, show } = useMobilePane()
 
 // Global undo/redo shortcuts. Skipped inside editable fields so native
 // text undo keeps working there.
@@ -63,6 +65,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
     <div v-if="store.storageError" class="storage-error-banner" role="alert">
       <span>⚠ {{ store.storageError }}</span>
       <button class="btn-sm" @click="store.saveNow()">Спробувати знову</button>
+    </div>
+
+    <!-- Narrow screens only (see media query): switch editor/preview panes. -->
+    <div class="mobile-pane-switch" role="tablist" aria-label="Вибір панелі">
+      <button
+        :class="['pane-btn', { active: mobilePane === 'editor' }]"
+        role="tab"
+        :aria-selected="mobilePane === 'editor'"
+        @click="show('editor')"
+      >✎ Редактор</button>
+      <button
+        :class="['pane-btn', { active: mobilePane === 'preview' }]"
+        role="tab"
+        :aria-selected="mobilePane === 'preview'"
+        @click="show('preview')"
+      >👁 Перегляд</button>
     </div>
 
     <div class="root-body">

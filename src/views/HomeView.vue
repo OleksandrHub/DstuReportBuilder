@@ -6,6 +6,7 @@ import { useReportStore } from '../stores/report'
 import { useReport } from '../composables/useReport'
 import { useDocxExport } from '../composables/useDocxExport'
 import { useToast } from '../composables/useToast'
+import { useMobilePane } from '../composables/useMobilePane'
 import { downloadJsonFile } from '../stores/document-io'
 
 import BlockRenderer from '../components/blocks/BlockRenderer.vue'
@@ -23,6 +24,7 @@ const store = useReportStore()
 const { doc } = useReport()
 const { exportToDocx, getPreviewBlob } = useDocxExport()
 const toast = useToast()
+const { mobilePane } = useMobilePane()
 
 type LeftTab = 'titlepage' | 'titleblocks' | 'blocks' | 'tools' | 'settings'
 const leftTab = ref<LeftTab>('titlepage')
@@ -82,6 +84,13 @@ function handleJsonExport() {
   if (!res) return
   downloadJsonFile(res.filename, res.json)
   toast.success(`Документ збережено в ${res.filename}`)
+}
+
+function formatSavedTime(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
 function onUpdateBlock(id: string, data: Partial<ReportBlock>) {
@@ -206,12 +215,18 @@ onBeforeUnmount(() => {
 
 // Re-render whenever the active document changes (deep).
 watch(doc, scheduleRender, { deep: true })
+
+// A hidden pane has zero size, so SuperDoc renders blank into it.
+// Re-render after switching to the preview pane (DOM is visible by then).
+watch(mobilePane, (pane) => {
+  if (pane === 'preview') nextTick(() => renderPreview())
+})
 </script>
 
 <template>
   <div class="app-layout">
     <!-- LEFT: Editor panel -->
-    <aside class="editor-panel">
+    <aside class="editor-panel" :class="{ 'mobile-hidden': mobilePane !== 'editor' }">
       <div class="panel-header">
         <div class="doc-name-row">
           <input
@@ -363,6 +378,16 @@ watch(doc, scheduleRender, { deep: true })
 
       <div class="panel-footer">
         <div v-if="store.storageError" class="footer-storage-error" role="alert">⚠ Не вдалося зберегти. Дані лише в памʼяті.</div>
+        <div
+          v-else class="footer-saved"
+          :title="store.lastSavedAt ? `Останнє збереження: ${store.lastSavedAt}` : 'Очікування першого збереження'"
+        >
+          <template v-if="!store.ready">⏳ Завантаження…</template>
+          <template v-else-if="store.lastSavedAt">
+            💾 Збережено {{ formatSavedTime(store.lastSavedAt) }} · {{ store.storageBackend === 'indexeddb' ? 'IndexedDB' : 'localStorage' }}
+          </template>
+          <template v-else>💾 Готується…</template>
+        </div>
         <div class="footer-btn-row">
           <button class="btn-export" :disabled="!store.ready" @click="handleExport">⬇ Завантажити .docx</button>
           <button
@@ -376,7 +401,7 @@ watch(doc, scheduleRender, { deep: true })
     </aside>
 
     <!-- RIGHT: Live .docx preview (SuperDoc) -->
-    <main class="preview-panel">
+    <main class="preview-panel" :class="{ 'mobile-hidden': mobilePane !== 'preview' }">
       <div class="preview-toolbar">
         <span class="preview-label">Перегляд .docx</span>
         <span v-if="previewLoading" class="preview-status">оновлення…</span>

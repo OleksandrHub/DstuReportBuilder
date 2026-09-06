@@ -29,7 +29,7 @@ body {
 #app { height: 100%; display: flex; flex-direction: column; }
 
 /* ===== ROOT LAYOUT ===== */
-.root-layout { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.root-layout { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
 
 .top-nav {
   display: flex;
@@ -78,36 +78,6 @@ body {
 }
 .nav-icon-btn:hover:not(:disabled) { background: var(--color-surface2); }
 .nav-icon-btn:disabled { opacity: 0.35; cursor: default; }
-
-/* ===== RESPONSIVE ===== */
-/* Narrow: editor on top, preview below (both keep their own scroll). */
-@media (max-width: 1100px) {
-  .app-layout { flex-direction: column; }
-  .editor-panel {
-    width: 100%;
-    flex: 1 1 45%;
-    min-height: 0;
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
-  }
-  .preview-panel { flex: 1 1 55%; min-height: 0; }
-}
-
-/* Mobile: sidebar becomes an overlay; grids collapse to one column. */
-@media (max-width: 760px) {
-  .doc-sidebar {
-    position: absolute;
-    z-index: 200;
-    height: 100%;
-    width: min(300px, 85vw);
-    box-shadow: var(--shadow);
-  }
-  .panel-body { padding: 12px; }
-  .field-row-two { grid-template-columns: 1fr; }
-  .style-card-grid { grid-template-columns: 1fr; }
-  .toast-stack { left: 16px; }
-  .nav-title { font-size: 13px; }
-}
 
 /* ===== ACCESSIBILITY: focus + touch targets ===== */
 button:focus-visible,
@@ -158,6 +128,16 @@ a:focus-visible {
   color: #ff9aa8;
   margin-bottom: 8px;
   text-align: center;
+}
+
+.footer-saved {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-export:disabled, .btn-primary:disabled {
@@ -380,7 +360,7 @@ a:focus-visible {
 }
 .btn-sm.btn-danger-solid:hover { opacity: 0.85; }
 
-.root-body { display: flex; flex: 1; overflow: hidden; position: relative; }
+.root-body { display: flex; flex: 1; min-height: 0; overflow: hidden; position: relative; }
 
 .doc-sidebar {
   width: 280px;
@@ -391,7 +371,7 @@ a:focus-visible {
   padding: 16px;
 }
 
-.main-content { flex: 1; overflow: hidden; display: flex; }
+.main-content { flex: 1; min-height: 0; min-width: 0; overflow: hidden; display: flex; }
 
 /* Sidebar slide transition */
 .slide-enter-active, .slide-leave-active { transition: width 0.25s ease, opacity 0.25s ease; overflow: hidden; }
@@ -1739,3 +1719,71 @@ h3.preview-heading { font-size: 1em; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-accent2); }
+
+/* ===== RESPONSIVE ===== */
+/* The pane switcher lives in App.vue and is visible on phones only (<768px).
+   At 768px and above the classic layout holds: editor left, preview right. */
+.mobile-pane-switch { display: none; }
+
+/* Phones (<768px): one pane at a time via the switcher (full height each). */
+@media (max-width: 767px) {
+  .mobile-pane-switch {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+  .pane-btn {
+    flex: 1;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font-ui);
+    transition: all 0.2s;
+  }
+  .pane-btn.active {
+    background: rgba(233, 69, 96, 0.12);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  .app-layout { flex-direction: column; min-height: 0; }
+  .editor-panel,
+  .preview-panel {
+    width: 100%;
+    /* Zero-basis flex: the visible pane fills the layout exactly, so inner
+       scroll containers (.panel-body / .preview-scroll) get a bounded height
+       and the editor is full-width instead of fixed 420px. */
+    flex: 1 1 0%;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+    border-right: none;
+  }
+  .editor-panel.mobile-hidden,
+  .preview-panel.mobile-hidden {
+    display: none;
+  }
+}
+
+/* Mobile: sidebar becomes an overlay; grids collapse to one column. */
+@media (max-width: 767px) {
+  .doc-sidebar {
+    position: absolute;
+    z-index: 200;
+    height: 100%;
+    width: min(300px, 85vw);
+    box-shadow: var(--shadow);
+  }
+  .panel-body { padding: 12px; }
+  .field-row-two { grid-template-columns: 1fr; }
+  .style-card-grid { grid-template-columns: 1fr; }
+  .toast-stack { left: 16px; }
+  .nav-title { font-size: 13px; }
+}
