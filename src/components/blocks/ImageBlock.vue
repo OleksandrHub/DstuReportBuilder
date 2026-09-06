@@ -77,10 +77,10 @@ async function onFileChange(e: Event) {
     <div class="block-toolbar">
       <span class="block-type-label">🖼 Рисунок {{ props.index }}</span>
       <div class="block-actions">
-        <button @click="emit('duplicate')" title="Копіювати">⎘</button>
-        <button @click="emit('moveUp')" title="Вгору">↑</button>
-        <button @click="emit('moveDown')" title="Вниз">↓</button>
-        <button @click="emit('remove')" class="btn-danger" title="Видалити">✕</button>
+        <button @click="emit('duplicate')" title="Копіювати" aria-label="Копіювати">⎘</button>
+        <button @click="emit('moveUp')" title="Вгору" aria-label="Вгору">↑</button>
+        <button @click="emit('moveDown')" title="Вниз" aria-label="Вниз">↓</button>
+        <button @click="emit('remove')" class="btn-danger" title="Видалити" aria-label="Видалити">✕</button>
       </div>
     </div>
 

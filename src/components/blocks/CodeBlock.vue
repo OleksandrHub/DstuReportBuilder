@@ -19,10 +19,10 @@ const languages = ['typescript', 'javascript', 'python', 'java', 'c', 'cpp', 'cs
     <div class="block-toolbar">
       <span class="block-type-label">{ } Код (Лістинг {{ props.index }})</span>
       <div class="block-actions">
-        <button @click="emit('duplicate')" title="Копіювати">⎘</button>
-        <button @click="emit('moveUp')" title="Вгору">↑</button>
-        <button @click="emit('moveDown')" title="Вниз">↓</button>
-        <button @click="emit('remove')" class="btn-danger" title="Видалити">✕</button>
+        <button @click="emit('duplicate')" title="Копіювати" aria-label="Копіювати">⎘</button>
+        <button @click="emit('moveUp')" title="Вгору" aria-label="Вгору">↑</button>
+        <button @click="emit('moveDown')" title="Вниз" aria-label="Вниз">↓</button>
+        <button @click="emit('remove')" class="btn-danger" title="Видалити" aria-label="Видалити">✕</button>
       </div>
     </div>
 
@@ -103,7 +103,7 @@ const languages = ['typescript', 'javascript', 'python', 'java', 'c', 'cpp', 'cs
         title="Міжрядковий інтервал"
       />
       <button :class="['style-btn', { active: props.block.bold }]"
-        @click="emit('update', { bold: !props.block.bold })" title="Жирний"><b>B</b></button>
+        @click="emit('update', { bold: !props.block.bold })" title="Жирний" aria-label="Жирний"><b>B</b></button>
       <input type="color" class="style-color"
         :value="'#' + (props.block.color ?? '000000')"
         @input="emit('update', { color: ($event.target as HTMLInputElement).value.replace('#','').toUpperCase() })"

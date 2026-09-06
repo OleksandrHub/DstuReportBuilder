@@ -128,6 +128,7 @@ export const useReportStore = defineStore('report', () => {
       }
     } finally {
       ready.value = true
+      resetHistory()
       schedulePersist()
     }
   }
@@ -148,6 +149,78 @@ export const useReportStore = defineStore('report', () => {
     () => schedulePersist(),
     { deep: true },
   )
+
+  // --- Undo / redo (whole-active-document snapshots) ---
+  // Snapshots are pushed debounced (not per keystroke); applying a snapshot
+  // sets lastSnapshot so the watcher doesn't record the undo itself.
+  const MAX_HISTORY = 30
+  const pastDocs = ref<string[]>([])
+  const futureDocs = ref<string[]>([])
+  const lastSnapshot = ref('')
+  let historyTimer: ReturnType<typeof setTimeout> | null = null
+
+  function snapshotOf(doc: ReportDocument | null): string {
+    return doc ? JSON.stringify(doc) : ''
+  }
+
+  function resetHistory() {
+    pastDocs.value = []
+    futureDocs.value = []
+    if (historyTimer) {
+      clearTimeout(historyTimer)
+      historyTimer = null
+    }
+    lastSnapshot.value = snapshotOf(activeDocument.value)
+  }
+
+  function scheduleHistoryPush() {
+    if (!ready.value) return
+    if (historyTimer) clearTimeout(historyTimer)
+    historyTimer = setTimeout(() => {
+      const cur = snapshotOf(activeDocument.value)
+      if (!cur) return
+      if (!lastSnapshot.value) {
+        // First baseline (e.g. right after load) — record, don't push.
+        lastSnapshot.value = cur
+        return
+      }
+      if (cur === lastSnapshot.value) return
+      pastDocs.value.push(lastSnapshot.value)
+      if (pastDocs.value.length > MAX_HISTORY) pastDocs.value.shift()
+      lastSnapshot.value = cur
+      futureDocs.value = []
+    }, 800)
+  }
+
+  const canUndo = computed(() => pastDocs.value.length > 0)
+  const canRedo = computed(() => futureDocs.value.length > 0)
+
+  function applySnapshot(json: string) {
+    const doc = activeDocument.value
+    if (!doc) return
+    const idx = documents.value.findIndex(d => d.id === doc.id)
+    if (idx === -1) return
+    documents.value[idx] = JSON.parse(json) as ReportDocument
+  }
+
+  function undo() {
+    const prev = pastDocs.value.pop()
+    if (prev === undefined) return
+    futureDocs.value.push(lastSnapshot.value)
+    lastSnapshot.value = prev
+    applySnapshot(prev)
+  }
+
+  function redo() {
+    const next = futureDocs.value.pop()
+    if (next === undefined) return
+    pastDocs.value.push(lastSnapshot.value)
+    lastSnapshot.value = next
+    applySnapshot(next)
+  }
+
+  watch(activeDocument, () => scheduleHistoryPush(), { deep: true })
+  watch(activeDocumentId, () => resetHistory())
 
   function touchActive() {
     const doc = activeDocument.value
@@ -1283,6 +1356,10 @@ export const useReportStore = defineStore('report', () => {
     storageBackend,
     storageError,
     lastSavedAt,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
     /** Force an immediate persist (used by the error banner's "retry" button). */
     saveNow: () => void persistNow(),
     titleTemplates,

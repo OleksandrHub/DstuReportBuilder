@@ -129,9 +129,9 @@ function cancelImport() {
           </template>
         </div>
         <div class="doc-item-actions" @click.stop>
-          <button class="btn-icon" @click="startRename(doc.id, doc.name)" title="Перейменувати">✎</button>
-          <button class="btn-icon" @click="store.duplicateDocument(doc.id)" title="Дублювати">⎘</button>
-          <button class="btn-icon btn-danger" @click="confirmDelete(doc.id, doc.name)" title="Видалити">✕</button>
+          <button class="btn-icon" @click="startRename(doc.id, doc.name)" title="Перейменувати" aria-label="Перейменувати">✎</button>
+          <button class="btn-icon" @click="store.duplicateDocument(doc.id)" title="Дублювати" aria-label="Дублювати">⎘</button>
+          <button class="btn-icon btn-danger" @click="confirmDelete(doc.id, doc.name)" title="Видалити" aria-label="Видалити">✕</button>
         </div>
       </div>
     </div>
@@ -148,8 +148,8 @@ function cancelImport() {
     </div>
 
     <div class="io-row">
-      <button class="btn-sm" :disabled="!store.ready" @click="handleBackup" title="Зберегти всі документи і шаблони в JSON-файл">⬇ Бекап</button>
-      <button class="btn-sm" :disabled="!store.ready" @click="backupInput?.click()" title="Відновити документи з JSON-файлу">⬆ Відновити</button>
+      <button class="btn-sm" :disabled="!store.ready" @click="handleBackup" title="Зберегти всі документи і шаблони в JSON-файл" aria-label="Зберегти всі документи і шаблони в JSON-файл">⬇ Бекап</button>
+      <button class="btn-sm" :disabled="!store.ready" @click="backupInput?.click()" title="Відновити документи з JSON-файлу" aria-label="Відновити документи з JSON-файлу">⬆ Відновити</button>
       <input ref="backupInput" type="file" accept="application/json,.json" style="display: none" @change="onRestoreFile" />
     </div>
 

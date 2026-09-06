@@ -86,11 +86,11 @@ function addInner(afterId?: string) {
         {{ props.block.blocks.length }}
       </span>
       <div class="block-actions">
-        <button @click="ungroup()" title="Розформувати групу (блоки лишаться на місці)">⤴</button>
-        <button @click="emit('duplicate')" title="Копіювати">⎘</button>
-        <button @click="emit('moveUp')" title="Вгору">↑</button>
-        <button @click="emit('moveDown')" title="Вниз">↓</button>
-        <button @click="emit('remove')" class="btn-danger" title="Видалити">✕</button>
+        <button @click="ungroup()" title="Розформувати групу (блоки лишаться на місці)" aria-label="Розформувати групу (блоки лишаться на місці)">⤴</button>
+        <button @click="emit('duplicate')" title="Копіювати" aria-label="Копіювати">⎘</button>
+        <button @click="emit('moveUp')" title="Вгору" aria-label="Вгору">↑</button>
+        <button @click="emit('moveDown')" title="Вниз" aria-label="Вниз">↓</button>
+        <button @click="emit('remove')" class="btn-danger" title="Видалити" aria-label="Видалити">✕</button>
       </div>
     </div>
 
@@ -129,7 +129,7 @@ function addInner(afterId?: string) {
           v-if="props.context !== 'title' && innerMoveFor !== inner.id"
           class="btn-add-item move-toggle-full"
           @click="innerMoveFor = inner.id"
-          title="Перенести блок в іншу групу або назовні"
+          title="Перенести блок в іншу групу або назовні" aria-label="Перенести блок в іншу групу або назовні"
         >⤵ Перенести…</button>
         <MoveToMenu
           v-else-if="props.context !== 'title'"

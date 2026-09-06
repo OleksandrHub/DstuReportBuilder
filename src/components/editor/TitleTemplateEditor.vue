@@ -154,8 +154,8 @@ function onImportFile(e: Event) {
 <template>
   <div v-if="doc" class="title-tpl-editor">
     <div class="tpl-toolbar">
-      <button class="btn-sm" @click="store.resetTitleTemplate()" title="Скинути макет до стандартного">↺ Скинути</button>
-      <button class="btn-sm btn-accent" @click="showSavePrompt = !showSavePrompt" title="Зберегти поточний макет як шаблон">💾 Зберегти шаблон</button>
+      <button class="btn-sm" @click="store.resetTitleTemplate()" title="Скинути макет до стандартного" aria-label="Скинути макет до стандартного">↺ Скинути</button>
+      <button class="btn-sm btn-accent" @click="showSavePrompt = !showSavePrompt" title="Зберегти поточний макет як шаблон" aria-label="Зберегти поточний макет як шаблон">💾 Зберегти шаблон</button>
       <button class="btn-sm" @click="showTemplates = !showTemplates" :title="showTemplates ? 'Сховати список шаблонів' : 'Показати збережені шаблони'">📂 Шаблони ({{ store.titleTemplates.length }})</button>
     </div>
 
@@ -186,8 +186,8 @@ function onImportFile(e: Event) {
     </div>
     <div v-else-if="showTemplates" class="tpl-empty">Немає збережених шаблонів</div>
     <div v-if="showTemplates" class="tpl-io-row">
-      <button class="btn-sm" @click="exportTpls" title="Зберегти всі шаблони макетів у JSON-файл">⬇ Експорт у файл</button>
-      <button class="btn-sm" @click="importInput?.click()" title="Завантажити шаблони макетів із JSON-файлу">⬆ Імпорт із файлу</button>
+      <button class="btn-sm" @click="exportTpls" title="Зберегти всі шаблони макетів у JSON-файл" aria-label="Зберегти всі шаблони макетів у JSON-файл">⬇ Експорт у файл</button>
+      <button class="btn-sm" @click="importInput?.click()" title="Завантажити шаблони макетів із JSON-файлу" aria-label="Завантажити шаблони макетів із JSON-файлу">⬆ Імпорт із файлу</button>
       <input ref="importInput" type="file" accept="application/json,.json" style="display:none" @change="onImportFile" />
     </div>
 
@@ -207,8 +207,8 @@ function onImportFile(e: Event) {
     <div v-if="doc.titleTemplate.length > 1" class="collapse-all-row">
       <span class="collapse-count">Блоків: {{ doc.titleTemplate.length }}</span>
       <span class="collapse-all-spacer"></span>
-      <button class="btn-sm" @click="setAllTitleCollapsed(true)" title="Згорнути всі блоки до заголовків">Згорнути все</button>
-      <button class="btn-sm" @click="setAllTitleCollapsed(false)" title="Розгорнути всі блоки">Розгорнути все</button>
+      <button class="btn-sm" @click="setAllTitleCollapsed(true)" title="Згорнути всі блоки до заголовків" aria-label="Згорнути всі блоки до заголовків">Згорнути все</button>
+      <button class="btn-sm" @click="setAllTitleCollapsed(false)" title="Розгорнути всі блоки" aria-label="Розгорнути всі блоки">Розгорнути все</button>
     </div>
     <div class="title-blocks-list">
       <div v-if="doc.titleTemplate.length === 0" class="tpl-empty">Макет порожній — додай рядок нижче або натисни «↺ Скинути».</div>
@@ -245,8 +245,8 @@ function onImportFile(e: Event) {
             <span class="collapse-summary">{{ titleBlockSummary(block) }}</span>
           </button>
           <div class="collapse-mini">
-            <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору">↑</button>
-            <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз">↓</button>
+            <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору" aria-label="Вгору">↑</button>
+            <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз" aria-label="Вниз">↓</button>
           </div>
         </div>
         <div v-show="isTitleItemOpen(block)" class="collapse-body">
@@ -264,9 +264,9 @@ function onImportFile(e: Event) {
               />
             </div>
             <div class="block-actions">
-              <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору">↑</button>
-              <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз">↓</button>
-              <button class="btn-danger" @click="store.removeTitleBlock(block.id)" title="Видалити">✕</button>
+              <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору" aria-label="Вгору">↑</button>
+              <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз" aria-label="Вниз">↓</button>
+              <button class="btn-danger" @click="store.removeTitleBlock(block.id)" title="Видалити" aria-label="Видалити">✕</button>
             </div>
           </div>
           <div class="title-add-row">
@@ -298,23 +298,26 @@ function onImportFile(e: Event) {
                   :key="a"
                   :class="['align-btn', { active: (block as TitleLineBlock).align === a }]"
                   @click="store.updateTitleBlock(block.id, { align: a as 'left'|'center'|'right' })"
+                  :title="a === 'left' ? 'Зліва' : a === 'center' ? 'По центру' : 'Справа'"
+                  :aria-label="a === 'left' ? 'Вирівняти зліва' : a === 'center' ? 'Вирівняти по центру' : 'Вирівняти справа'"
                 >{{ a === 'left' ? '⇤' : a === 'center' ? '⇔' : '⇥' }}</button>
               </div>
               <button
                 :class="['bold-btn', { active: (block as TitleLineBlock).bold }]"
                 @click="store.updateTitleBlock(block.id, { bold: !(block as TitleLineBlock).bold })"
+                :title="(block as TitleLineBlock).bold ? 'Прибрати жирний' : 'Зробити жирним'"
               >B</button>
             </div>
             <div class="block-actions">
-              <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору">↑</button>
-              <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз">↓</button>
-              <button :class="{ toggled: rowDetails[block.id] }" @click="toggleRowDetails(block.id)" title="Стиль рядка: розмір, колір, відступи">⚙</button>
-              <button class="btn-danger" @click="store.removeTitleBlock(block.id)" title="Видалити">✕</button>
+              <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору" aria-label="Вгору">↑</button>
+              <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз" aria-label="Вниз">↓</button>
+              <button :class="{ toggled: rowDetails[block.id] }" @click="toggleRowDetails(block.id)" title="Стиль рядка: розмір, колір, відступи" aria-label="Стиль рядка: розмір, колір, відступи">⚙</button>
+              <button class="btn-danger" @click="store.removeTitleBlock(block.id)" title="Видалити" aria-label="Видалити">✕</button>
             </div>
           </div>
           <div class="title-add-row">
-            <button class="btn-add-item" @click="store.addTitleBlock('titleLine', block.id)" title="Додати рядок після цього">+ Рядок після</button>
-            <button class="btn-add-item" @click="store.addTitleBlock('titleSpacer', block.id)" title="Додати відступ після цього">+ Відступ після</button>
+            <button class="btn-add-item" @click="store.addTitleBlock('titleLine', block.id)" title="Додати рядок після цього" aria-label="Додати рядок після цього">+ Рядок після</button>
+            <button class="btn-add-item" @click="store.addTitleBlock('titleSpacer', block.id)" title="Додати відступ після цього" aria-label="Додати відступ після цього">+ Відступ після</button>
           </div>
 
           <!-- Advanced style (collapsed by default) -->
@@ -372,9 +375,9 @@ function onImportFile(e: Event) {
             <div class="title-content-head">
               <span class="block-type-label">▣ Блок</span>
               <div class="block-actions">
-                <button @click="store.moveTitleBlock(block.id, 'up')">↑</button>
-                <button @click="store.moveTitleBlock(block.id, 'down')">↓</button>
-                <button class="btn-danger" @click="store.removeTitleBlock(block.id)">✕</button>
+                <button @click="store.moveTitleBlock(block.id, 'up')" title="Перемістити блок вгору" aria-label="Перемістити блок вгору">↑</button>
+                <button @click="store.moveTitleBlock(block.id, 'down')" title="Перемістити блок вниз" aria-label="Перемістити блок вниз">↓</button>
+                <button class="btn-danger" @click="store.removeTitleBlock(block.id)" title="Видалити блок" aria-label="Видалити блок">✕</button>
               </div>
             </div>
             <component
@@ -410,7 +413,7 @@ function onImportFile(e: Event) {
       <button class="btn-add-item" @click="store.addTitleContentBlock('formula')">∑ Формула</button>
       <button class="btn-add-item" @click="store.addTitleContentBlock('list')">≡ Список</button>
       <button class="btn-add-item" @click="store.addTitleContentBlock('columns')">▥ Стовпці</button>
-      <button class="btn-add-item" @click="store.addTitleContentBlock('group')" title="Група блоків, що згортається">▤ Група</button>
+      <button class="btn-add-item" @click="store.addTitleContentBlock('group')" title="Група блоків, що згортається" aria-label="Група блоків, що згортається">▤ Група</button>
     </div>
   </div>
 </template>

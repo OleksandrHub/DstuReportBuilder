@@ -138,7 +138,7 @@ function goToSection(id: string) {
           placeholder="🔍 Пошук налаштувань…"
           aria-label="Пошук налаштувань"
         />
-        <button v-if="sectionSearch" class="btn-sm" @click="sectionSearch = ''" title="Очистити пошук">✕</button>
+        <button v-if="sectionSearch" class="btn-sm" @click="sectionSearch = ''" title="Очистити пошук" aria-label="Очистити пошук">✕</button>
       </div>
       <div class="set-chips">
         <button
@@ -187,7 +187,7 @@ function goToSection(id: string) {
       <div class="style-actions-row">
         <button
           class="btn-sm btn-accent" @click="showApplyStyles = true"
-          title="Зняти ручні оверрайди шрифту/розміру/кольору з абзаців і заголовків, щоб вони йшли за цими стилями"
+          title="Зняти ручні оверрайди шрифту/розміру/кольору з абзаців і заголовків, щоб вони йшли за цими стилями" aria-label="Зняти ручні оверрайди шрифту/розміру/кольору з абзаців і заголовків, щоб вони йшли за цими стилями"
         >✔ Застосувати до всіх блоків</button>
         <button class="btn-sm" @click="showResetStyles = true">⟲ Скинути стилі до ДСТУ</button>
       </div>

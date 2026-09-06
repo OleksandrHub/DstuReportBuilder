@@ -77,10 +77,10 @@ function openMdWithCurrent() {
     <div class="block-toolbar">
       <span class="block-type-label">⊞ Таблиця {{ props.index }}</span>
       <div class="block-actions">
-        <button @click="emit('duplicate')" title="Копіювати">⎘</button>
-        <button @click="emit('moveUp')" title="Вгору">↑</button>
-        <button @click="emit('moveDown')" title="Вниз">↓</button>
-        <button @click="emit('remove')" class="btn-danger" title="Видалити">✕</button>
+        <button @click="emit('duplicate')" title="Копіювати" aria-label="Копіювати">⎘</button>
+        <button @click="emit('moveUp')" title="Вгору" aria-label="Вгору">↑</button>
+        <button @click="emit('moveDown')" title="Вниз" aria-label="Вниз">↓</button>
+        <button @click="emit('remove')" class="btn-danger" title="Видалити" aria-label="Видалити">✕</button>
       </div>
     </div>
 
@@ -147,7 +147,7 @@ function openMdWithCurrent() {
         title="Міжрядковий інтервал"
       />
       <button :class="['style-btn', { active: props.block.bold }]"
-        @click="emit('update', { bold: !props.block.bold })" title="Жирний (комірки даних)"><b>B</b></button>
+        @click="emit('update', { bold: !props.block.bold })" title="Жирний (комірки даних)" aria-label="Жирний (комірки даних)"><b>B</b></button>
       <select class="style-select"
         :value="props.block.align ?? 'left'"
         @change="emit('update', { align: ($event.target as HTMLSelectElement).value as 'left'|'center'|'right'|'justify' })"
@@ -191,7 +191,7 @@ function openMdWithCurrent() {
           @input="store.setTableColumnWidth(props.block.id, ci, parseInt(($event.target as HTMLInputElement).value) || 1)"
           :title="`Стовпець ${ci + 1}`"
         />
-        <button class="btn-small" @click="store.resetTableColumnWidths(props.block.id)" title="Рівні ширини">↺</button>
+        <button class="btn-small" @click="store.resetTableColumnWidths(props.block.id)" title="Рівні ширини" aria-label="Рівні ширини">↺</button>
       </div>
     </div>
 
@@ -229,11 +229,11 @@ function openMdWithCurrent() {
                 class="btn-icon btn-danger col-remove-btn"
                 @click="store.removeTableColumn(props.block.id, ci)"
                 :disabled="props.block.headers.length <= 1"
-                title="Видалити стовпець"
+                title="Видалити стовпець" aria-label="Видалити стовпець"
               >✕</button>
             </th>
             <th class="col-add-cell">
-              <button class="btn-icon" @click="store.addTableColumn(props.block.id)" title="Додати стовпець">+</button>
+              <button class="btn-icon" @click="store.addTableColumn(props.block.id)" title="Додати стовпець" aria-label="Додати стовпець">+</button>
             </th>
           </tr>
         </thead>
@@ -265,7 +265,7 @@ function openMdWithCurrent() {
                   class="btn-icon btn-danger"
                   @click="store.removeTableRow(props.block.id, row.id)"
                   :disabled="props.block.rows.length <= 1"
-                  title="Видалити рядок"
+                  title="Видалити рядок" aria-label="Видалити рядок"
                 >✕</button>
               </td>
             </tr>

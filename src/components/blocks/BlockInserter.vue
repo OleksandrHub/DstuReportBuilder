@@ -37,7 +37,7 @@ function pick(t: ReportBlock['type']) {
 
 <template>
   <div class="block-inserter">
-    <button v-if="!open" class="inserter-line" @click="open = true" title="Вставити блок тут">
+    <button v-if="!open" class="inserter-line" @click="open = true" title="Вставити блок тут" aria-label="Вставити блок тут">
       <span class="inserter-plus">+</span>
     </button>
     <div v-else class="inserter-menu">

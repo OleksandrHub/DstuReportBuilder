@@ -67,7 +67,8 @@ function setColor(hex: string) {
         :key="a"
         :class="['style-btn', { active: effAlign() === a }]"
         @click="emit('update', { align: a })"
-        :title="a"
+        :title="a === 'left' ? 'Зліва' : a === 'center' ? 'По центру' : a === 'right' ? 'Справа' : 'По ширині'"
+        :aria-label="a === 'left' ? 'Вирівняти зліва' : a === 'center' ? 'Вирівняти по центру' : a === 'right' ? 'Вирівняти справа' : 'Вирівняти по ширині'"
       >{{ a === 'left' ? '⇤' : a === 'center' ? '⇔' : a === 'right' ? '⇥' : '≡' }}</button>
     </div>
 
@@ -75,7 +76,7 @@ function setColor(hex: string) {
     <button
       :class="['style-btn', { active: props.block.bold }]"
       @click="emit('update', { bold: !props.block.bold })"
-      title="Жирний"
+      title="Жирний" aria-label="Жирний"
     ><b>B</b></button>
 
     <!-- Font family -->

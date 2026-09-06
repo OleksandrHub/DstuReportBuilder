@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import DocumentManager from './components/DocumentManager.vue'
 import Toast from './components/Toast.vue'
 import { RouterView } from 'vue-router'
@@ -7,15 +7,48 @@ import { useReportStore } from './stores/report'
 
 const sidebarOpen = ref(false)
 const store = useReportStore()
+
+// Global undo/redo shortcuts. Skipped inside editable fields so native
+// text undo keeps working there.
+function onGlobalKeydown(e: KeyboardEvent) {
+  if (!e.ctrlKey && !e.metaKey) return
+  const t = e.target as HTMLElement | null
+  if (t && t.closest('input, textarea, select, [contenteditable="true"]')) return
+  const key = e.key.toLowerCase()
+  if (key === 'z' && !e.shiftKey) {
+    e.preventDefault()
+    store.undo()
+  } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+    e.preventDefault()
+    store.redo()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onGlobalKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
 </script>
 
 <template>
   <div class="root-layout">
     <nav class="top-nav">
-      <button class="nav-menu-btn" @click="sidebarOpen = !sidebarOpen" title="Мої роботи">
+      <button class="nav-menu-btn" @click="sidebarOpen = !sidebarOpen" title="Мої роботи" aria-label="Мої роботи">
         ☰
       </button>
       <span class="nav-title">ДСТУ Конструктор звітів</span>
+      <button
+        class="nav-icon-btn"
+        :disabled="!store.ready || !store.canUndo"
+        @click="store.undo()"
+        title="Скасувати (Ctrl+Z)"
+        aria-label="Скасувати останню дію"
+      >↶</button>
+      <button
+        class="nav-icon-btn"
+        :disabled="!store.ready || !store.canRedo"
+        @click="store.redo()"
+        title="Повернути (Ctrl+Shift+Z)"
+        aria-label="Повернути скасовану дію"
+      >↷</button>
       <span class="nav-spacer"></span>
       <span v-if="!store.ready" class="nav-status" title="Завантаження даних зі сховища">⏳ Завантаження…</span>
       <span

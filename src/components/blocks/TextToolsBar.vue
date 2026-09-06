@@ -64,7 +64,7 @@ async function copyOutput() {
       </label>
       <div class="text-tools-row">
         <button class="btn-small" @click="doReplace">Замінити в усьому документі</button>
-        <button class="btn-small" @click="doDash" title="— → –">— → – (тире)</button>
+        <button class="btn-small" @click="doDash" title="— → –" aria-label="— → –">— → – (тире)</button>
       </div>
       <p v-if="status" class="block-hint">{{ status }}</p>
 
@@ -78,9 +78,9 @@ async function copyOutput() {
         placeholder="Вставте текст сюди…"
       />
       <div class="text-tools-row">
-        <button class="btn-small" @click="toUpper" title="усі літери великі">текст → ВЕЛИКІ</button>
-        <button class="btn-small" @click="toLower" title="усі літери малі">ТЕКСТ → малі</button>
-        <button class="btn-small" @click="escapeMarkers" title="\\ перед * _ ` { }">Екранувати маркери</button>
+        <button class="btn-small" @click="toUpper" title="усі літери великі" aria-label="усі літери великі">текст → ВЕЛИКІ</button>
+        <button class="btn-small" @click="toLower" title="усі літери малі" aria-label="усі літери малі">ТЕКСТ → малі</button>
+        <button class="btn-small" @click="escapeMarkers" title="\\ перед * _ ` { }" aria-label="\\ перед * _ ` { }">Екранувати маркери</button>
       </div>
       <textarea
         class="block-textarea"

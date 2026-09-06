@@ -29,10 +29,10 @@ function upd(id: string, data: Partial<SourceEntry>) {
     <div class="block-toolbar">
       <span class="block-type-label">📚 Джерела (ДСТУ 2015)</span>
       <div class="block-actions">
-        <button @click="emit('duplicate')" title="Копіювати">⎘</button>
-        <button @click="emit('moveUp')" title="Вгору">↑</button>
-        <button @click="emit('moveDown')" title="Вниз">↓</button>
-        <button @click="emit('remove')" class="btn-danger" title="Видалити">✕</button>
+        <button @click="emit('duplicate')" title="Копіювати" aria-label="Копіювати">⎘</button>
+        <button @click="emit('moveUp')" title="Вгору" aria-label="Вгору">↑</button>
+        <button @click="emit('moveDown')" title="Вниз" aria-label="Вниз">↓</button>
+        <button @click="emit('remove')" class="btn-danger" title="Видалити" aria-label="Видалити">✕</button>
       </div>
     </div>
 
@@ -54,9 +54,9 @@ function upd(id: string, data: Partial<SourceEntry>) {
         <select class="style-select" :value="e.type" @change="upd(e.id, { type: ($event.target as HTMLSelectElement).value as SourceType })">
           <option v-for="(lbl, k) in typeLabels" :key="k" :value="k">{{ lbl }}</option>
         </select>
-        <button class="btn-icon" @click="store.moveSource(props.block.id, e.id, 'up')" title="Вгору">↑</button>
-        <button class="btn-icon" @click="store.moveSource(props.block.id, e.id, 'down')" title="Вниз">↓</button>
-        <button class="btn-icon btn-danger" @click="store.removeSource(props.block.id, e.id)" :disabled="props.block.entries.length <= 1">✕</button>
+        <button class="btn-icon" @click="store.moveSource(props.block.id, e.id, 'up')" title="Вгору" aria-label="Вгору">↑</button>
+        <button class="btn-icon" @click="store.moveSource(props.block.id, e.id, 'down')" title="Вниз" aria-label="Вниз">↓</button>
+        <button class="btn-icon btn-danger" @click="store.removeSource(props.block.id, e.id)" :disabled="props.block.entries.length <= 1" title="Видалити джерело" aria-label="Видалити джерело">✕</button>
       </div>
 
       <input class="block-input" :value="e.authors" @input="upd(e.id, { authors: ($event.target as HTMLInputElement).value })" placeholder="Автори через кому: Прізвище І. П., Інший А. Б." />

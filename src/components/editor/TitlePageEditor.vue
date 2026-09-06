@@ -71,9 +71,9 @@ function confirmRename() {
           <span class="data-tpl-name">{{ tpl.name }}</span>
         </template>
         <div class="data-tpl-actions">
-          <button class="btn-small" @click="store.applyDataTemplate(tpl.id)" title="Застосувати">↩ Застосувати</button>
-          <button class="btn-icon" @click="startRename(tpl.id, tpl.name)" title="Перейменувати">✎</button>
-          <button class="btn-icon btn-danger" @click="store.deleteDataTemplate(tpl.id)" title="Видалити">✕</button>
+          <button class="btn-small" @click="store.applyDataTemplate(tpl.id)" title="Застосувати" aria-label="Застосувати">↩ Застосувати</button>
+          <button class="btn-icon" @click="startRename(tpl.id, tpl.name)" title="Перейменувати" aria-label="Перейменувати">✎</button>
+          <button class="btn-icon btn-danger" @click="store.deleteDataTemplate(tpl.id)" title="Видалити" aria-label="Видалити">✕</button>
         </div>
       </div>
     </div>

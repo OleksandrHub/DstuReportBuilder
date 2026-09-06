@@ -33,10 +33,10 @@ function updInner(colId: string, innerId: string, data: Partial<ReportBlock>) {
     <div class="block-toolbar">
       <span class="block-type-label">▥ Стовпці ({{ props.block.columns.length }})</span>
       <div class="block-actions">
-        <button @click="emit('duplicate')" title="Копіювати">⎘</button>
-        <button @click="emit('moveUp')" title="Вгору">↑</button>
-        <button @click="emit('moveDown')" title="Вниз">↓</button>
-        <button @click="emit('remove')" class="btn-danger" title="Видалити">✕</button>
+        <button @click="emit('duplicate')" title="Копіювати" aria-label="Копіювати">⎘</button>
+        <button @click="emit('moveUp')" title="Вгору" aria-label="Вгору">↑</button>
+        <button @click="emit('moveDown')" title="Вниз" aria-label="Вниз">↓</button>
+        <button @click="emit('remove')" class="btn-danger" title="Видалити" aria-label="Видалити">✕</button>
       </div>
     </div>
 
@@ -79,7 +79,7 @@ function updInner(colId: string, innerId: string, data: Partial<ReportBlock>) {
             />
           </template>
           <div v-else class="block-hint">[{{ inner.type }}]</div>
-          <button class="btn-icon btn-danger column-inner-del" @click="store.removeColumnBlock(props.block.id, col.id, inner.id)">✕</button>
+          <button class="btn-icon btn-danger column-inner-del" @click="store.removeColumnBlock(props.block.id, col.id, inner.id)" title="Видалити блок зі стовпця" aria-label="Видалити блок зі стовпця">✕</button>
         </div>
 
         <div class="column-add">

@@ -63,6 +63,73 @@ body {
 
 .nav-spacer { flex: 1; }
 
+.nav-icon-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.nav-icon-btn:hover:not(:disabled) { background: var(--color-surface2); }
+.nav-icon-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* ===== RESPONSIVE ===== */
+/* Narrow: editor on top, preview below (both keep their own scroll). */
+@media (max-width: 1100px) {
+  .app-layout { flex-direction: column; }
+  .editor-panel {
+    width: 100%;
+    flex: 1 1 45%;
+    min-height: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .preview-panel { flex: 1 1 55%; min-height: 0; }
+}
+
+/* Mobile: sidebar becomes an overlay; grids collapse to one column. */
+@media (max-width: 760px) {
+  .doc-sidebar {
+    position: absolute;
+    z-index: 200;
+    height: 100%;
+    width: min(300px, 85vw);
+    box-shadow: var(--shadow);
+  }
+  .panel-body { padding: 12px; }
+  .field-row-two { grid-template-columns: 1fr; }
+  .style-card-grid { grid-template-columns: 1fr; }
+  .toast-stack { left: 16px; }
+  .nav-title { font-size: 13px; }
+}
+
+/* ===== ACCESSIBILITY: focus + touch targets ===== */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.block-actions button,
+.btn-icon,
+.collapse-mini button,
+.align-btns .align-btn,
+.bold-btn,
+.level-btn,
+.group-toggle {
+  min-width: 28px;
+  min-height: 28px;
+}
+
 .nav-status {
   font-size: 12px;
   color: var(--color-text-muted);

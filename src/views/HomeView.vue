@@ -254,8 +254,8 @@ watch(doc, scheduleRender, { deep: true })
             <div v-if="doc.blocks.length > 1" class="collapse-all-row">
               <span class="collapse-count">Блоків: {{ doc.blocks.length }}</span>
               <span class="collapse-all-spacer"></span>
-              <button class="btn-sm" @click="setAllBlocksCollapsed(true)" title="Згорнути всі блоки до заголовків">Згорнути все</button>
-              <button class="btn-sm" @click="setAllBlocksCollapsed(false)" title="Розгорнути всі блоки">Розгорнути все</button>
+              <button class="btn-sm" @click="setAllBlocksCollapsed(true)" title="Згорнути всі блоки до заголовків" aria-label="Згорнути всі блоки до заголовків">Згорнути все</button>
+              <button class="btn-sm" @click="setAllBlocksCollapsed(false)" title="Розгорнути всі блоки" aria-label="Розгорнути всі блоки">Розгорнути все</button>
             </div>
             <BlockInserter v-if="doc.blocks.length" @add="store.addBlock($event, undefined, 'start')" />
             <div v-if="selectedIds.size > 0" class="selection-bar" role="status">
@@ -266,7 +266,7 @@ watch(doc, scheduleRender, { deep: true })
                 :title="selectedIds.size < 2 ? 'Вибери щонайменше 2 блоки' : 'Обʼєднати вибрані блоки в нову групу'"
                 @click="groupSelection()"
               >▤ Згрупувати</button>
-              <button class="btn-sm" @click="clearSelection()" title="Скасувати вибір">✕</button>
+              <button class="btn-sm" @click="clearSelection()" title="Скасувати вибір" aria-label="Скасувати вибір">✕</button>
             </div>
             <template v-for="block in doc.blocks" :key="block.id">
               <!-- Groups render with their own head (no outer outline header —
@@ -301,12 +301,12 @@ watch(doc, scheduleRender, { deep: true })
                     <span class="collapse-summary">{{ blockSummary(block) }}</span>
                   </button>
                   <div class="collapse-mini">
-                    <button @click="store.moveBlock(block.id, 'up')" title="Перемістити вгору">↑</button>
-                    <button @click="store.moveBlock(block.id, 'down')" title="Перемістити вниз">↓</button>
+                    <button @click="store.moveBlock(block.id, 'up')" title="Перемістити вгору" aria-label="Перемістити вгору">↑</button>
+                    <button @click="store.moveBlock(block.id, 'down')" title="Перемістити вниз" aria-label="Перемістити вниз">↓</button>
                     <button
                       :class="{ toggled: moveMenuFor === block.id }"
                       @click="moveMenuFor = moveMenuFor === block.id ? null : block.id"
-                      title="Перенести блок у групу"
+                      title="Перенести блок у групу" aria-label="Перенести блок у групу"
                     >⤵</button>
                   </div>
                 </div>
@@ -369,7 +369,7 @@ watch(doc, scheduleRender, { deep: true })
             class="btn-json"
             :disabled="!store.ready || !doc"
             @click="handleJsonExport"
-            title="Зберегти поточний документ у JSON-файл (повний бекап — у «Мої роботи»)"
+            title="Зберегти поточний документ у JSON-файл (повний бекап — у «Мої роботи»)" aria-label="Зберегти поточний документ у JSON-файл (повний бекап — у «Мої роботи»)"
           >⬇ JSON</button>
         </div>
       </div>
@@ -380,7 +380,7 @@ watch(doc, scheduleRender, { deep: true })
       <div class="preview-toolbar">
         <span class="preview-label">Перегляд .docx</span>
         <span v-if="previewLoading" class="preview-status">оновлення…</span>
-        <button class="preview-refresh" @click="renderPreview" title="Оновити перегляд">⟳</button>
+        <button class="preview-refresh" @click="renderPreview" title="Оновити перегляд" aria-label="Оновити перегляд">⟳</button>
       </div>
       <div class="preview-scroll superdoc-scroll">
         <div v-if="previewError" class="preview-error">⚠ {{ previewError }}</div>

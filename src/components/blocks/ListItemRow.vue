@@ -17,9 +17,9 @@ const store = useReportStore()
         @input="store.updateListItem(props.blockId, props.item.id, ($event.target as HTMLInputElement).value)"
         placeholder="елемент списку…"
       />
-      <button class="btn-icon" @click="store.addSiblingListItem(props.blockId, props.item.id)" title="Додати пункт поруч">＋</button>
-      <button class="btn-icon" @click="store.addSubListItem(props.blockId, props.item.id)" title="Додати підпункт">⤵</button>
-      <button class="btn-icon btn-danger" @click="store.removeListItem(props.blockId, props.item.id)">✕</button>
+      <button class="btn-icon" @click="store.addSiblingListItem(props.blockId, props.item.id)" title="Додати пункт поруч" aria-label="Додати пункт поруч">＋</button>
+      <button class="btn-icon" @click="store.addSubListItem(props.blockId, props.item.id)" title="Додати підпункт" aria-label="Додати підпункт">⤵</button>
+      <button class="btn-icon btn-danger" @click="store.removeListItem(props.blockId, props.item.id)" title="Видалити пункт" aria-label="Видалити пункт">✕</button>
     </div>
     <ListItemRow
       v-for="child in props.item.children"
