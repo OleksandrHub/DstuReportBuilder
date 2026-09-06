@@ -1,10 +1,40 @@
 <script setup lang="ts">
 import { useReportStore } from '../../stores/report'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { NumberingSchemes } from '../../types/document'
+import { resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
+import TextStyleCard from './TextStyleCard.vue'
+import ConfirmDialog from '../ConfirmDialog.vue'
+import { useToast } from '../../composables/useToast'
 
 const store = useReportStore()
+const toast = useToast()
 const s = computed(() => store.activeDocument?.settings)
+
+// Effective global styles (with inheritance fallbacks) for the cards.
+const h1 = computed(() => resolveHeadingStyle(s.value, 1))
+const h2 = computed(() => resolveHeadingStyle(s.value, 2))
+const h3 = computed(() => resolveHeadingStyle(s.value, 3))
+const body = computed(() => resolveBodyStyle(s.value))
+
+const showResetStyles = ref(false)
+const showApplyStyles = ref(false)
+
+function doResetStyles() {
+  store.resetGlobalStyles()
+  showResetStyles.value = false
+  toast.success('Глобальні стилі скинуто до ДСТУ')
+}
+
+function doApplyStyles() {
+  const n = store.inheritGlobalStylesEverywhere()
+  showApplyStyles.value = false
+  toast.success(
+    n > 0
+      ? `Знято ручні оверрайди з ${n} блоків — тепер вони йдуть за глобальними стилями`
+      : 'Усі блоки вже йдуть за глобальними стилями',
+  )
+}
 
 function update(field: string, value: string | number) {
   store.updateSettings({ [field]: value } as never)
@@ -43,6 +73,59 @@ const hfModes = [
 <template>
   <div v-if="s" class="settings-editor">
     <h3 class="section-title">Налаштування документа</h3>
+
+    <h4 class="subsection-title">Глобальні стилі заголовків і тексту</h4>
+    <div class="global-styles">
+      <TextStyleCard
+        title="Заголовок першого рівня" badge="H1"
+        sample="Розділ 1. Назва розділу"
+        :model-value="h1" :base-font-family="s.fontFamily"
+        @update="store.updateHeadingStyle(1, $event)"
+      />
+      <TextStyleCard
+        title="Заголовок другого рівня" badge="H2"
+        sample="1.1 Назва підрозділу"
+        :model-value="h2" :base-font-family="s.fontFamily"
+        @update="store.updateHeadingStyle(2, $event)"
+      />
+      <TextStyleCard
+        title="Заголовок третього рівня" badge="H3"
+        sample="1.1.1 Назва пункту"
+        :model-value="h3" :base-font-family="s.fontFamily"
+        @update="store.updateHeadingStyle(3, $event)"
+      />
+      <TextStyleCard
+        title="Основний текст" badge="¶"
+        sample="Основний текст звіту набирається шрифтом Times New Roman розміром 14 пунктів з міжрядковим інтервалом 1,5 та абзацним відступом 1,25 см."
+        :model-value="body" :base-font-family="s.fontFamily"
+        @update="store.updateBodyText($event)"
+      />
+      <div class="style-actions-row">
+        <button
+          class="btn-sm btn-accent" @click="showApplyStyles = true"
+          title="Зняти ручні оверрайди шрифту/розміру/кольору з абзаців і заголовків, щоб вони йшли за цими стилями"
+        >✔ Застосувати до всіх блоків</button>
+        <button class="btn-sm" @click="showResetStyles = true">⟲ Скинути стилі до ДСТУ</button>
+      </div>
+    </div>
+
+    <ConfirmDialog
+      v-if="showApplyStyles"
+      title="Застосувати стилі до всіх блоків?"
+      message="Буде знято ручні налаштування шрифту, розміру, інтервалу, відступу і кольору з абзаців та заголовків (вирівнювання і жирність збережуться)."
+      confirm-label="Застосувати"
+      @confirm="doApplyStyles"
+      @cancel="showApplyStyles = false"
+    />
+    <ConfirmDialog
+      v-if="showResetStyles"
+      title="Скинути стилі до ДСТУ?"
+      message="H1/H2 — Times New Roman 14, інтервал 1,5, абзац 1,25, жирний, по центру; H3 — так само, але зліва. Ручні оверрайди блоків не чіпаються."
+      confirm-label="Скинути"
+      danger
+      @confirm="doResetStyles"
+      @cancel="showResetStyles = false"
+    />
 
     <div class="field-group">
       <label>Шрифт</label>

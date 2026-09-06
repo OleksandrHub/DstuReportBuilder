@@ -73,6 +73,8 @@ function updInner(colId: string, innerId: string, data: Partial<ReportBlock>) {
             <BlockStyleRow
               :block="styleable(inner)!"
               :default-align="inner.type === 'heading' ? 'center' : 'left'"
+              :style-kind="inner.type === 'heading' ? 'heading' : 'paragraph'"
+              :heading-level="inner.type === 'heading' ? inner.level : undefined"
               @update="updInner(col.id, inner.id, $event)"
             />
           </template>

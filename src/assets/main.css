@@ -128,6 +128,54 @@ body {
 .btn-json:hover:not(:disabled) { background: var(--color-accent2); }
 .btn-json:disabled { opacity: 0.45; cursor: wait; }
 
+/* ===== GLOBAL TEXT STYLE CARDS ===== */
+.global-styles { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+
+.style-card {
+  background: var(--color-input-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.style-card:hover { border-color: var(--color-accent2); }
+
+.style-card-head { display: flex; align-items: center; gap: 8px; }
+.style-card-badge {
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+.style-card-title { font-size: 13px; font-weight: 600; }
+
+.style-card-preview {
+  background: #fff;
+  color: #000;
+  border-radius: 4px;
+  padding: 10px 12px;
+  overflow-wrap: break-word;
+}
+
+.style-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+}
+.style-card-grid .field-group { margin-bottom: 0; }
+
+.color-row { display: flex; align-items: center; gap: 8px; }
+.color-hex { font-size: 12px; color: var(--color-text-muted); font-family: 'Courier New', monospace; }
+
+.style-card-bold { margin-bottom: 0; }
+
+.style-actions-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.style-actions-row .btn-sm { flex: 1; padding: 7px 10px; }
+
 /* ===== TOASTS ===== */
 .toast-stack {
   position: fixed;

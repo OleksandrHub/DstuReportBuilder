@@ -34,7 +34,9 @@ export function createDocument(name: string): ReportDocument {
     updatedAt: new Date().toISOString(),
     titlePage: { ...DEFAULT_TITLE_PAGE, year: new Date().getFullYear().toString() },
     titleTemplate: deepCloneTitleBlocks(DEFAULT_TITLE_TEMPLATE),
-    settings: { ...DEFAULT_SETTINGS },
+    // Deep clone: DEFAULT_SETTINGS now holds nested style objects that must
+    // not be shared between documents.
+    settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),
     blocks: [],
   }
 }

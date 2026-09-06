@@ -14,7 +14,7 @@ import {
   TableOfContents,
 } from 'docx'
 import type { ReportDocument, ReportBlock, ListItem, TableRow as DocTableRow } from '../../types/document'
-import { formatSourceDSTU } from '../../types/document'
+import { formatSourceDSTU, resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
 import type { FormulaImage } from '../useFormulaImage'
 import { cmToTwip, ptToHalfPt } from './units'
 import { baseRun, inlineRuns } from './text-runs'
@@ -38,17 +38,27 @@ export function buildBlock(
   const s = doc.settings
 
   if (block.type === 'paragraph') {
-    const pCfg = { ...cfg }
+    // Base = global body style; per-block fields override when set.
+    const g = resolveBodyStyle(s)
+    const pCfg = {
+      ...cfg,
+      name: g.fontFamily,
+      size: ptToHalfPt(g.fontSize),
+      lineSpacing: g.lineSpacing,
+      paragraphIndent: g.indent,
+      color: g.color || undefined,
+    }
     if (block.fontSize) pCfg.size = ptToHalfPt(block.fontSize)
     if (block.fontFamily) pCfg.name = block.fontFamily
     if (block.lineSpacing !== undefined) pCfg.lineSpacing = block.lineSpacing
     if (block.indent !== undefined) pCfg.paragraphIndent = block.indent
     if (block.color) pCfg.color = block.color
 
-    const alignment = ALIGN4_MAP[block.align ?? 'justify'] ?? AlignmentType.JUSTIFIED
-    const noIndent = block.align === 'center' || block.align === 'right'
+    const effAlign = block.align ?? g.align
+    const alignment = ALIGN4_MAP[effAlign] ?? AlignmentType.JUSTIFIED
+    const noIndent = effAlign === 'center' || effAlign === 'right'
 
-    return [bodyParagraph(inlineRuns(block.text, pCfg, block.bold ?? false), pCfg, noIndent, alignment)]
+    return [bodyParagraph(inlineRuns(block.text, pCfg, block.bold ?? g.bold), pCfg, noIndent, alignment)]
   }
 
   if (block.type === 'heading') {
@@ -59,16 +69,31 @@ export function buildBlock(
       2: HeadingLevel.HEADING_2,
       3: HeadingLevel.HEADING_3,
     }
-    const hCfg = { ...cfg }
+    // Base = global H1/H2/H3 style; per-block fields override when set.
+    const g = resolveHeadingStyle(s, block.level)
+    const hCfg = {
+      ...cfg,
+      name: g.fontFamily,
+      size: ptToHalfPt(g.fontSize),
+      lineSpacing: g.lineSpacing,
+      paragraphIndent: g.indent,
+      color: g.color || undefined,
+    }
     if (block.fontSize) hCfg.size = ptToHalfPt(block.fontSize)
     if (block.fontFamily) hCfg.name = block.fontFamily
     if (block.lineSpacing !== undefined) hCfg.lineSpacing = block.lineSpacing
     if (block.indent !== undefined) hCfg.paragraphIndent = block.indent
     if (block.color) hCfg.color = block.color
 
-    const hAlign = ALIGN4_MAP[block.align ?? 'center'] ?? AlignmentType.CENTER
-    const hBold = block.bold ?? true
-    const hIndent = block.indent !== undefined ? { firstLine: cmToTwip(block.indent) } : undefined
+    const effAlign = block.align ?? g.align
+    const hAlign = ALIGN4_MAP[effAlign] ?? AlignmentType.CENTER
+    const hBold = block.bold ?? g.bold
+    // First-line indent is meaningless for centered/right headings — skip it
+    // there (same convention as body paragraphs above).
+    const effIndent = block.indent ?? g.indent
+    const hIndent = effAlign === 'center' || effAlign === 'right'
+      ? undefined
+      : { firstLine: cmToTwip(effIndent) }
 
     return [
       new Paragraph({

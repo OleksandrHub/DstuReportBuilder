@@ -34,6 +34,6 @@ const emit = defineEmits<{
     />
     <MarkerHint />
 
-    <BlockStyleRow :block="props.block" default-align="justify" @update="emit('update', $event)" />
+    <BlockStyleRow :block="props.block" default-align="justify" style-kind="paragraph" @update="emit('update', $event)" />
   </div>
 </template>

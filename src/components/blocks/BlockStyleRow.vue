@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useReportStore } from '../../stores/report'
+import { resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
+import type { TextStyle } from '../../types/document'
 
 interface StyleProps {
   align?: 'left' | 'center' | 'right' | 'justify'
@@ -13,17 +15,43 @@ interface StyleProps {
 
 const store = useReportStore()
 const props = withDefaults(
-  defineProps<{ block: StyleProps; defaultAlign?: 'left' | 'center' | 'right' | 'justify'; showIndent?: boolean }>(),
-  { showIndent: true },
+  defineProps<{
+    block: StyleProps
+    defaultAlign?: 'left' | 'center' | 'right' | 'justify'
+    showIndent?: boolean
+    /** Which global style this row inherits from when block fields are unset. */
+    styleKind?: 'paragraph' | 'heading' | 'base'
+    headingLevel?: 1 | 2 | 3
+  }>(),
+  { showIndent: true, styleKind: 'base' },
 )
 const emit = defineEmits<{ update: [data: Partial<StyleProps>] }>()
 
 const s = () => store.activeDocument?.settings
-const fontSize = () => props.block.fontSize ?? s()?.fontSize ?? 14
-const lineSpacing = () => props.block.lineSpacing ?? s()?.lineSpacing ?? 1.5
-const fontFamily = () => props.block.fontFamily ?? s()?.fontFamily ?? 'Times New Roman'
-const indent = () => props.block.indent ?? s()?.paragraphIndent ?? 1.25
-const color = () => '#' + (props.block.color ?? '000000')
+
+// Effective fallback: global heading/body style, or base document settings
+// for caption-like usages (image, code, table, …).
+function fallback(): TextStyle {
+  const st = s()
+  if (props.styleKind === 'heading') return resolveHeadingStyle(st, props.headingLevel ?? 1)
+  if (props.styleKind === 'paragraph') return resolveBodyStyle(st)
+  return {
+    fontFamily: st?.fontFamily ?? 'Times New Roman',
+    fontSize: st?.fontSize ?? 14,
+    color: '000000',
+    bold: false,
+    align: props.defaultAlign ?? 'justify',
+    lineSpacing: st?.lineSpacing ?? 1.5,
+    indent: st?.paragraphIndent ?? 1.25,
+  }
+}
+
+const fontSize = () => props.block.fontSize ?? fallback().fontSize
+const lineSpacing = () => props.block.lineSpacing ?? fallback().lineSpacing
+const fontFamily = () => props.block.fontFamily ?? fallback().fontFamily
+const indent = () => props.block.indent ?? fallback().indent
+const color = () => '#' + (props.block.color ?? fallback().color)
+const effAlign = () => props.block.align ?? fallback().align
 
 function setColor(hex: string) {
   emit('update', { color: hex.replace('#', '').toUpperCase() })
@@ -37,7 +65,7 @@ function setColor(hex: string) {
       <button
         v-for="a in (['left','center','right','justify'] as const)"
         :key="a"
-        :class="['style-btn', { active: (props.block.align ?? props.defaultAlign ?? 'justify') === a }]"
+        :class="['style-btn', { active: effAlign() === a }]"
         @click="emit('update', { align: a })"
         :title="a"
       >{{ a === 'left' ? '⇤' : a === 'center' ? '⇔' : a === 'right' ? '⇥' : '≡' }}</button>
@@ -105,11 +133,11 @@ function setColor(hex: string) {
       title="Колір тексту"
     />
 
-    <!-- Reset to doc defaults -->
+    <!-- Reset to global style / doc defaults -->
     <button
       class="style-btn"
       @click="emit('update', { fontSize: undefined, fontFamily: undefined, lineSpacing: undefined, indent: undefined, color: undefined })"
-      title="Скинути до налаштувань документа"
+      :title="props.styleKind === 'base' ? 'Скинути до налаштувань документа' : 'Скинути до глобального стилю'"
     >↺</button>
   </div>
 </template>

@@ -132,7 +132,9 @@ export function sanitizeDocument(raw: unknown, index: number): { doc?: ReportDoc
     updatedAt: now,
     titlePage: isRecord(raw.titlePage) ? (raw.titlePage as unknown as TitlePageData) : { ...DEFAULT_TITLE_PAGE },
     titleTemplate: Array.isArray(raw.titleTemplate) ? (raw.titleTemplate as TitleBlock[]) : [],
-    settings: isRecord(raw.settings) ? (raw.settings as unknown as DocumentSettings) : { ...DEFAULT_SETTINGS },
+    settings: isRecord(raw.settings)
+      ? (raw.settings as unknown as DocumentSettings)
+      : (JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) as DocumentSettings),
     blocks: raw.blocks as ReportDocument['blocks'],
   }
   return { doc }

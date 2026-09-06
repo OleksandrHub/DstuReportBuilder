@@ -3,7 +3,7 @@ import type {
   ReportBlock,
   TitleSpacerBlock,
 } from '../types/document'
-import { DEFAULT_TITLE_TEMPLATE } from '../types/document'
+import { DEFAULT_TITLE_TEMPLATE, DEFAULT_HEADING_STYLES, DEFAULT_BODY_TEXT } from '../types/document'
 import { generateId, deepCloneTitleBlocks } from './factories'
 
 // Run all schema migrations over freshly-loaded documents, mutating them in place.
@@ -52,6 +52,28 @@ export function migrateDocuments(rawDocs: ReportDocument[]): void {
     }
     if (doc.settings && doc.settings.formulaPrefix === undefined) {
       doc.settings.formulaPrefix = 'Формула'
+    }
+    // Migrate: add global heading/body text styles to old documents.
+    // bodyText inherits the doc's own base values so appearance is unchanged.
+    if (doc.settings && !doc.settings.headingStyles) {
+      doc.settings.headingStyles = JSON.parse(JSON.stringify(DEFAULT_HEADING_STYLES))
+    } else if (doc.settings?.headingStyles) {
+      for (const lvl of [1, 2, 3] as const) {
+        if (!doc.settings.headingStyles[lvl]) {
+          doc.settings.headingStyles[lvl] = { ...DEFAULT_HEADING_STYLES[lvl] }
+        }
+      }
+    }
+    if (doc.settings && !doc.settings.bodyText) {
+      doc.settings.bodyText = {
+        fontFamily: '',
+        fontSize: doc.settings.fontSize ?? DEFAULT_BODY_TEXT.fontSize,
+        color: '000000',
+        bold: false,
+        align: 'justify',
+        lineSpacing: doc.settings.lineSpacing ?? DEFAULT_BODY_TEXT.lineSpacing,
+        indent: doc.settings.paragraphIndent ?? DEFAULT_BODY_TEXT.indent,
+      }
     }
   }
 

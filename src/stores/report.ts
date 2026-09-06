@@ -13,9 +13,12 @@ import type {
   SourceEntry,
   SourcesBlock,
   ColumnsBlock,
+  TextStyle,
 } from '../types/document'
 import {
   DEFAULT_TITLE_TEMPLATE,
+  DEFAULT_HEADING_STYLES,
+  DEFAULT_BODY_TEXT,
   parseMarkdownTable,
 } from '../types/document'
 import { generateId, emptySourceEntry, deepCloneTitleBlocks, createDocument } from './factories'
@@ -224,6 +227,72 @@ export const useReportStore = defineStore('report', () => {
     if (!doc) return
     doc.settings = { ...doc.settings, ...data }
     touchActive()
+  }
+
+  // Guard for settings objects that predate the global-styles migration
+  // (migrateDocuments normally backfills them on load).
+  function ensureGlobalStyles(doc: ReportDocument) {
+    if (!doc.settings.headingStyles) {
+      doc.settings.headingStyles = JSON.parse(JSON.stringify(DEFAULT_HEADING_STYLES))
+    }
+    if (!doc.settings.bodyText) {
+      doc.settings.bodyText = { ...DEFAULT_BODY_TEXT }
+    }
+  }
+
+  function updateHeadingStyle(level: 1 | 2 | 3, data: Partial<TextStyle>) {
+    const doc = activeDocument.value
+    if (!doc) return
+    ensureGlobalStyles(doc)
+    const cur = doc.settings.headingStyles[level] ?? DEFAULT_HEADING_STYLES[level]
+    doc.settings.headingStyles[level] = { ...cur, ...data }
+    touchActive()
+  }
+
+  function updateBodyText(data: Partial<TextStyle>) {
+    const doc = activeDocument.value
+    if (!doc) return
+    ensureGlobalStyles(doc)
+    doc.settings.bodyText = { ...doc.settings.bodyText, ...data }
+    touchActive()
+  }
+
+  function resetGlobalStyles() {
+    const doc = activeDocument.value
+    if (!doc) return
+    doc.settings.headingStyles = JSON.parse(JSON.stringify(DEFAULT_HEADING_STYLES))
+    doc.settings.bodyText = { ...DEFAULT_BODY_TEXT }
+    touchActive()
+  }
+
+  // Drop per-block font/size/spacing/indent/color overrides on paragraph +
+  // heading blocks (body, columns content, title-embedded) so they follow the
+  // global styles. align/bold are intentional formatting — kept as is.
+  function inheritGlobalStylesEverywhere() {
+    const doc = activeDocument.value
+    if (!doc) return 0
+    let count = 0
+    const strip = (b: ReportBlock) => {
+      if (b.type !== 'paragraph' && b.type !== 'heading') return
+      delete b.fontSize
+      delete b.fontFamily
+      delete b.lineSpacing
+      delete b.indent
+      delete b.color
+      count++
+    }
+    const stripTitleContent = (tb: TitleBlock) => {
+      if (tb.type === 'titleContent') strip(tb.block)
+    }
+    for (const b of doc.blocks) {
+      strip(b)
+      if (b.type === 'columns') {
+        for (const col of b.columns) for (const inner of col.blocks) strip(inner)
+      }
+    }
+    for (const tb of doc.titleTemplate) stripTitleContent(tb)
+    if (count) touchActive()
+    return count
   }
 
   // --- Blocks ---
@@ -997,6 +1066,10 @@ export const useReportStore = defineStore('report', () => {
     setActiveDocument,
     updateTitlePage,
     updateSettings,
+    updateHeadingStyle,
+    updateBodyText,
+    resetGlobalStyles,
+    inheritGlobalStylesEverywhere,
     addBlock,
     addIntroBlocks,
     replaceAllText,

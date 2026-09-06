@@ -1,4 +1,4 @@
-import type { DocumentSettings } from './document-settings'
+import type { DocumentSettings, TextStyle } from './document-settings'
 import type { ReportBlock } from './blocks'
 import type { TitlePageData, WorkIntro, TitleBlock, TitleLineBlock, TitleAlign } from './title'
 
@@ -16,11 +16,46 @@ export interface ReportDocument {
 export const TITLE_TEMPLATES_STORAGE_KEY = 'dstu-title-templates'
 export const TITLE_DATA_TEMPLATES_KEY = 'dstu-title-data-templates'
 
+function clone<T>(v: T): T {
+  return JSON.parse(JSON.stringify(v)) as T
+}
+
+// ДСТУ-стилі за замовчуванням: H1/H2 — Times New Roman 14, інтервал 1.5,
+// абзац 1.25, жирний, по центру; H3 — так само, але вирівнювання зліва.
+// fontFamily: '' = наслідувати базовий шрифт документа (теж Times New Roman).
+const DSTU_HEADING_BASE: TextStyle = {
+  fontFamily: '',
+  fontSize: 14,
+  color: '000000',
+  bold: true,
+  align: 'center',
+  lineSpacing: 1.5,
+  indent: 1.25,
+}
+
+export const DEFAULT_HEADING_STYLES: Record<1 | 2 | 3, TextStyle> = {
+  1: { ...DSTU_HEADING_BASE },
+  2: { ...DSTU_HEADING_BASE },
+  3: { ...DSTU_HEADING_BASE, align: 'left' },
+}
+
+export const DEFAULT_BODY_TEXT: TextStyle = {
+  fontFamily: '',
+  fontSize: 14,
+  color: '000000',
+  bold: false,
+  align: 'justify',
+  lineSpacing: 1.5,
+  indent: 1.25,
+}
+
 export const DEFAULT_SETTINGS: DocumentSettings = {
   fontFamily: 'Times New Roman',
   fontSize: 14,
   lineSpacing: 1.5,
   paragraphIndent: 1.25,
+  headingStyles: clone(DEFAULT_HEADING_STYLES),
+  bodyText: { ...DEFAULT_BODY_TEXT },
   marginLeft: 3.0,
   marginRight: 1.5,
   marginTop: 2.0,

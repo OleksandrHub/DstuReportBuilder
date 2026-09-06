@@ -40,6 +40,10 @@ const emit = defineEmits<{
     />
     <MarkerHint />
 
-    <BlockStyleRow :block="props.block" default-align="center" @update="emit('update', $event)" />
+    <BlockStyleRow
+      :block="props.block" default-align="center"
+      style-kind="heading" :heading-level="props.block.level"
+      @update="emit('update', $event)"
+    />
   </div>
 </template>
