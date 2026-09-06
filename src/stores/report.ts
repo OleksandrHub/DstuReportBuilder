@@ -10,6 +10,7 @@ import type {
   TitleBlock,
   TitlePageTemplate,
   TitleDataTemplate,
+  TitleContentBlock,
   SourceEntry,
   SourcesBlock,
   ColumnsBlock,
@@ -609,6 +610,108 @@ export const useReportStore = defineStore('report', () => {
     touchActive()
   }
 
+  // --- Relocate blocks across containers (body top level <-> groups) ---
+  // Title-embedded groups are intentionally out of scope: the title layout
+  // is edited in place via moveTitleBlock.
+
+  // Top-level block → end of a group. Returns false when impossible
+  // (unknown ids, or trying to nest a group into a group — restored as is).
+  function moveBlockToGroup(blockId: string, targetGroupId: string): boolean {
+    const doc = activeDocument.value
+    if (!doc) return false
+    const target = doc.blocks.find((b): b is GroupBlock => b.type === 'group' && b.id === targetGroupId)
+    if (!target) return false
+    const idx = doc.blocks.findIndex(b => b.id === blockId)
+    if (idx === -1) return false
+    const [b] = doc.blocks.splice(idx, 1)
+    if (!b || b.type === 'group') {
+      if (b) doc.blocks.splice(idx, 0, b)
+      return false
+    }
+    target.blocks.push(b)
+    touchActive()
+    return true
+  }
+
+  // Inner block → top level, right after its group.
+  function moveInnerBlockOut(groupId: string, innerId: string): boolean {
+    const doc = activeDocument.value
+    if (!doc) return false
+    const gi = doc.blocks.findIndex(b => b.type === 'group' && b.id === groupId)
+    if (gi === -1) return false
+    const g = doc.blocks[gi] as GroupBlock
+    const ii = g.blocks.findIndex(b => b.id === innerId)
+    if (ii === -1) return false
+    const [b] = g.blocks.splice(ii, 1)
+    if (!b) return false
+    doc.blocks.splice(gi + 1, 0, b)
+    touchActive()
+    return true
+  }
+
+  // Inner block → end of another group.
+  function moveInnerBlockToGroup(fromGroupId: string, innerId: string, toGroupId: string): boolean {
+    if (fromGroupId === toGroupId) return false
+    const doc = activeDocument.value
+    if (!doc) return false
+    const from = doc.blocks.find((b): b is GroupBlock => b.type === 'group' && b.id === fromGroupId)
+    const to = doc.blocks.find((b): b is GroupBlock => b.type === 'group' && b.id === toGroupId)
+    if (!from || !to) return false
+    const ii = from.blocks.findIndex(b => b.id === innerId)
+    if (ii === -1) return false
+    const [b] = from.blocks.splice(ii, 1)
+    if (!b) return false
+    to.blocks.push(b)
+    touchActive()
+    return true
+  }
+
+  // Wrap top-level blocks into a new group at the first selected position,
+  // preserving document order. Group ids in the selection are ignored (no
+  // nesting). Returns the new group id, or null when fewer than 2 valid
+  // blocks were selected (nothing is mutated in that case).
+  function groupSelectedBlocks(ids: string[]): string | null {
+    const doc = activeDocument.value
+    if (!doc) return null
+    const wanted = new Set(ids)
+    const picked = doc.blocks.filter(b => wanted.has(b.id) && b.type !== 'group')
+    if (picked.length < 2) return null
+    const firstIdx = doc.blocks.findIndex(b => b.id === picked[0]!.id)
+    doc.blocks = doc.blocks.filter(b => !picked.some(p => p.id === b.id))
+    const g: GroupBlock = { id: generateId(), type: 'group', title: 'Нова група', collapsed: false, blocks: picked }
+    doc.blocks.splice(Math.min(firstIdx, doc.blocks.length), 0, g)
+    touchActive()
+    return g.id
+  }
+
+  // Dissolve a group: children take the group's place at the top level, or
+  // unwrap into titleContent wrappers when the group lives in the title
+  // layout. Empty groups simply disappear. Blocks are never deleted.
+  function ungroupGroup(groupId: string): boolean {
+    const doc = activeDocument.value
+    if (!doc) return false
+    const gi = doc.blocks.findIndex(b => b.type === 'group' && b.id === groupId)
+    if (gi !== -1) {
+      const g = doc.blocks[gi] as GroupBlock
+      doc.blocks.splice(gi, 1, ...g.blocks)
+      touchActive()
+      return true
+    }
+    const ti = doc.titleTemplate.findIndex(
+      tb => tb.type === 'titleContent' && tb.block.type === 'group' && tb.block.id === groupId,
+    )
+    if (ti === -1) return false
+    const inner = (doc.titleTemplate[ti] as TitleContentBlock).block as GroupBlock
+    const wrapped: TitleBlock[] = inner.blocks.map(b => ({
+      id: generateId(),
+      type: 'titleContent' as const,
+      block: b,
+    }))
+    doc.titleTemplate.splice(ti, 1, ...wrapped)
+    touchActive()
+    return true
+  }
+
   // --- List helpers ---
 
   function addListItem(blockId: string) {
@@ -958,6 +1061,20 @@ export const useReportStore = defineStore('report', () => {
     touchActive()
   }
 
+  // Duplicate a titleContent wrapper with its inner block intact
+  // (previously this created an empty block of the same type).
+  function duplicateTitleContentBlock(titleBlockId: string) {
+    const doc = activeDocument.value
+    if (!doc) return
+    const idx = doc.titleTemplate.findIndex(b => b.id === titleBlockId)
+    if (idx === -1) return
+    const tb = doc.titleTemplate[idx]!
+    if (tb.type !== 'titleContent') return
+    const cloned = cloneBlockWithNewIds(tb.block)
+    doc.titleTemplate.splice(idx + 1, 0, { id: generateId(), type: 'titleContent', block: cloned })
+    touchActive()
+  }
+
   function removeTitleBlock(id: string) {
     const doc = activeDocument.value
     if (!doc) return
@@ -1202,6 +1319,11 @@ export const useReportStore = defineStore('report', () => {
     removeGroupBlock,
     duplicateGroupBlock,
     moveGroupBlock,
+    moveBlockToGroup,
+    moveInnerBlockOut,
+    moveInnerBlockToGroup,
+    groupSelectedBlocks,
+    ungroupGroup,
     addListItem,
     addSubListItem,
     addSiblingListItem,
@@ -1219,6 +1341,7 @@ export const useReportStore = defineStore('report', () => {
     getBlockIndex,
     addTitleBlock,
     addTitleContentBlock,
+    duplicateTitleContentBlock,
     updateTitleContentBlock,
     removeTitleBlock,
     moveTitleBlock,

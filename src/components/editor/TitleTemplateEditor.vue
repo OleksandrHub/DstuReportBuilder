@@ -2,7 +2,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { useReportStore } from '../../stores/report'
 import { useToast } from '../../composables/useToast'
-import type { TitleLineBlock, TitleSpacerBlock, TitleContentBlock } from '../../types/document'
+import type { TitleLineBlock, TitleSpacerBlock, TitleContentBlock, TitleBlock, GroupBlock } from '../../types/document'
 import { titleBlockKind, titleBlockSummary } from '../../utils/block-labels'
 import ParagraphBlock from '../blocks/ParagraphBlock.vue'
 import HeadingBlock from '../blocks/HeadingBlock.vue'
@@ -30,7 +30,25 @@ function toggleTitleBlock(id: string) {
 
 function setAllTitleCollapsed(value: boolean) {
   if (!doc.value) return
-  for (const b of doc.value.titleTemplate) collapsedTitle.value[b.id] = value
+  for (const b of doc.value.titleTemplate) {
+    collapsedTitle.value[b.id] = value
+    // Title-embedded groups have no outer header either — collapse-all
+    // drives the group's own persisted flag.
+    if (b.type === 'titleContent' && b.block.type === 'group' && b.block.collapsed !== value) {
+      store.updateTitleContentBlock(b.id, { collapsed: value })
+    }
+  }
+}
+
+// A title item wrapping a group: the group's own head serves as the header,
+// so it renders flat — no title-block-item wrapper, no title-content-wrap.
+function isTitleGroup(tb: TitleBlock): tb is TitleContentBlock & { block: GroupBlock } {
+  return tb.type === 'titleContent' && tb.block.type === 'group'
+}
+
+function isTitleItemOpen(tb: TitleBlock): boolean {
+  if (tb.type === 'titleContent' && tb.block.type === 'group') return !tb.block.collapsed
+  return !collapsedTitle.value[tb.id]
 }
 
 function saveTpl() {
@@ -194,13 +212,25 @@ function onImportFile(e: Event) {
     </div>
     <div class="title-blocks-list">
       <div v-if="doc.titleTemplate.length === 0" class="tpl-empty">Макет порожній — додай рядок нижче або натисни «↺ Скинути».</div>
+      <template v-for="block in doc.titleTemplate" :key="block.id">
+      <!-- Title-embedded groups render flat: just the group, no item/wrap chrome. -->
+      <GroupBlockEditor
+        v-if="isTitleGroup(block)"
+        :block="block.block"
+        :index-override="1"
+        context="title"
+        @update="store.updateTitleContentBlock(block.id, $event)"
+        @remove="store.removeTitleBlock(block.id)"
+        @duplicate="store.duplicateTitleContentBlock(block.id)"
+        @move-up="store.moveTitleBlock(block.id, 'up')"
+        @move-down="store.moveTitleBlock(block.id, 'down')"
+      />
       <div
-        v-for="block in doc.titleTemplate"
-        :key="block.id"
+        v-else
         class="title-block-item"
         :class="[
           block.type === 'titleSpacer' ? 'spacer-block' : 'line-block',
-          { collapsed: !!collapsedTitle[block.id] },
+          { collapsed: !isTitleItemOpen(block) },
         ]"
       >
         <div class="collapse-head">
@@ -219,7 +249,7 @@ function onImportFile(e: Event) {
             <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз">↓</button>
           </div>
         </div>
-        <div v-show="!collapsedTitle[block.id]" class="collapse-body">
+        <div v-show="isTitleItemOpen(block)" class="collapse-body">
         <!-- SPACER -->
         <template v-if="block.type === 'titleSpacer'">
           <div class="spacer-row">
@@ -351,9 +381,11 @@ function onImportFile(e: Event) {
               :is="contentEditors[(block as TitleContentBlock).block.type]"
               :block="(block as TitleContentBlock).block"
               :index="1"
+              :index-override="1"
+              :context="'title'"
               @update="store.updateTitleContentBlock(block.id, $event)"
               @remove="store.removeTitleBlock(block.id)"
-              @duplicate="store.addTitleContentBlock((block as TitleContentBlock).block.type, block.id)"
+              @duplicate="store.duplicateTitleContentBlock(block.id)"
               @move-up="store.moveTitleBlock(block.id, 'up')"
               @move-down="store.moveTitleBlock(block.id, 'down')"
             />
@@ -361,6 +393,7 @@ function onImportFile(e: Event) {
         </template>
         </div>
       </div>
+      </template>
     </div>
 
     <!-- Add at end -->

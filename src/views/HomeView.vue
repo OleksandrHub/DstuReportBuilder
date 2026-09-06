@@ -9,6 +9,7 @@ import { useToast } from '../composables/useToast'
 import { downloadJsonFile } from '../stores/document-io'
 
 import BlockRenderer from '../components/blocks/BlockRenderer.vue'
+import MoveToMenu from '../components/blocks/MoveToMenu.vue'
 import TextToolsBar from '../components/blocks/TextToolsBar.vue'
 import BlockInserter from '../components/blocks/BlockInserter.vue'
 import TitlePageEditor from '../components/editor/TitlePageEditor.vue'
@@ -98,7 +99,39 @@ function toggleBlockCollapse(id: string) {
 
 function setAllBlocksCollapsed(value: boolean) {
   if (!doc.value) return
-  for (const b of doc.value.blocks) collapsedBlocks.value[b.id] = value
+  for (const b of doc.value.blocks) {
+    collapsedBlocks.value[b.id] = value
+    // Groups have no outer header (their own head serves as the header),
+    // so collapse-all drives their persisted flag instead.
+    if (b.type === 'group' && b.collapsed !== value) {
+      store.updateBlock(b.id, { collapsed: value })
+    }
+  }
+}
+
+// Relocation menu: which top-level block's "move to…" picker is open.
+const moveMenuFor = ref<string | null>(null)
+
+// Multi-select for grouping: ids of top-level non-group blocks.
+// UI-only state (cleared after grouping).
+const selectedIds = ref<Set<string>>(new Set())
+
+function toggleSelect(id: string) {
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  selectedIds.value = next
+}
+
+function clearSelection() {
+  selectedIds.value = new Set()
+}
+
+function groupSelection() {
+  const id = store.groupSelectedBlocks([...selectedIds.value])
+  clearSelection()
+  if (id) toast.success('Блоки згруповано — задай групі назву')
+  else toast.info('Вибери щонайменше 2 блоки')
 }
 
 // ===== Live docx preview (SuperDoc) =====
@@ -225,9 +258,38 @@ watch(doc, scheduleRender, { deep: true })
               <button class="btn-sm" @click="setAllBlocksCollapsed(false)" title="Розгорнути всі блоки">Розгорнути все</button>
             </div>
             <BlockInserter v-if="doc.blocks.length" @add="store.addBlock($event, undefined, 'start')" />
+            <div v-if="selectedIds.size > 0" class="selection-bar" role="status">
+              <span>Вибрано: {{ selectedIds.size }}</span>
+              <button
+                class="btn-sm btn-accent"
+                :disabled="selectedIds.size < 2"
+                :title="selectedIds.size < 2 ? 'Вибери щонайменше 2 блоки' : 'Обʼєднати вибрані блоки в нову групу'"
+                @click="groupSelection()"
+              >▤ Згрупувати</button>
+              <button class="btn-sm" @click="clearSelection()" title="Скасувати вибір">✕</button>
+            </div>
             <template v-for="block in doc.blocks" :key="block.id">
-              <div class="content-block-wrap" :class="{ collapsed: !!collapsedBlocks[block.id] }">
+              <!-- Groups render with their own head (no outer outline header —
+                   it would duplicate the group's title bar). -->
+              <BlockRenderer
+                v-if="block.type === 'group'"
+                :block="block"
+                @update="onUpdateBlock(block.id, $event)"
+                @remove="store.removeBlock(block.id)"
+                @duplicate="store.duplicateBlock(block.id)"
+                @move-up="store.moveBlock(block.id, 'up')"
+                @move-down="store.moveBlock(block.id, 'down')"
+              />
+              <div v-else class="content-block-wrap" :class="{ collapsed: !!collapsedBlocks[block.id] }">
                 <div class="collapse-head">
+                  <input
+                    type="checkbox"
+                    class="select-checkbox"
+                    :checked="selectedIds.has(block.id)"
+                    @change="toggleSelect(block.id)"
+                    title="Вибрати для групування"
+                    aria-label="Вибрати блок для групування"
+                  />
                   <button
                     class="collapse-toggle"
                     @click="toggleBlockCollapse(block.id)"
@@ -241,8 +303,19 @@ watch(doc, scheduleRender, { deep: true })
                   <div class="collapse-mini">
                     <button @click="store.moveBlock(block.id, 'up')" title="Перемістити вгору">↑</button>
                     <button @click="store.moveBlock(block.id, 'down')" title="Перемістити вниз">↓</button>
+                    <button
+                      :class="{ toggled: moveMenuFor === block.id }"
+                      @click="moveMenuFor = moveMenuFor === block.id ? null : block.id"
+                      title="Перенести блок у групу"
+                    >⤵</button>
                   </div>
                 </div>
+                <MoveToMenu
+                  v-if="moveMenuFor === block.id"
+                  :block-id="block.id"
+                  :source-group-id="null"
+                  @done="moveMenuFor = null"
+                />
                 <div v-show="!collapsedBlocks[block.id]" class="collapse-body">
                   <BlockRenderer
                     :block="block"

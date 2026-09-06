@@ -19,7 +19,10 @@ import GroupBlockEditor from './GroupBlock.vue'
 // Renders one body block of any type and re-emits editor events WITHOUT the
 // block id — the parent (document list or group) supplies the context.
 // Extracted from HomeView so groups can reuse the full block toolbox.
-defineProps<{ block: ReportBlock }>()
+// indexOverride: fixed caption number for contexts outside the body
+// (e.g. title layout, where the store numbering doesn't reach and every
+// figure is conventionally shown as №1, like TitleTemplateEditor does).
+defineProps<{ block: ReportBlock; indexOverride?: number }>()
 
 const store = useReportStore()
 
@@ -76,7 +79,7 @@ const emit = defineEmits<{
   <CodeBlockEditor
     v-else-if="block.type === 'code'"
     :block="block"
-    :index="captionIndex(block.id, 'code')"
+    :index="indexOverride ?? captionIndex(block.id, 'code')"
     @update="emit('update', $event)"
     @remove="emit('remove')"
     @duplicate="emit('duplicate')"
@@ -86,7 +89,7 @@ const emit = defineEmits<{
   <ImageBlockEditor
     v-else-if="block.type === 'image'"
     :block="block"
-    :index="captionIndex(block.id, 'image')"
+    :index="indexOverride ?? captionIndex(block.id, 'image')"
     @update="emit('update', $event)"
     @remove="emit('remove')"
     @duplicate="emit('duplicate')"
@@ -96,7 +99,7 @@ const emit = defineEmits<{
   <TableBlockEditor
     v-else-if="block.type === 'table'"
     :block="block"
-    :index="captionIndex(block.id, 'table')"
+    :index="indexOverride ?? captionIndex(block.id, 'table')"
     @update="emit('update', $event)"
     @remove="emit('remove')"
     @duplicate="emit('duplicate')"
@@ -106,7 +109,7 @@ const emit = defineEmits<{
   <FormulaBlockEditor
     v-else-if="block.type === 'formula'"
     :block="block"
-    :index="captionIndex(block.id, 'formula')"
+    :index="indexOverride ?? captionIndex(block.id, 'formula')"
     @update="emit('update', $event)"
     @remove="emit('remove')"
     @duplicate="emit('duplicate')"

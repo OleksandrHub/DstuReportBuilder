@@ -8,8 +8,9 @@ A Vue 3 web app for composing academic lab reports formatted to the Ukrainian
 ## Features
 
 - **Block-based editor** — paragraphs, headings, lists, code listings, images,
-  tables, formulas (LaTeX), a table of contents, a bibliography, and multi-column
-  layouts. Every text block exposes font / size / line-spacing / bold / alignment
+  tables, formulas (LaTeX), a table of contents, a bibliography, multi-column
+  layouts, and collapsible **group** blocks (editor-only containers, transparent
+  in `.docx`). Every text block exposes font / size / line-spacing / bold / alignment
   / colour overrides.
 - **Title page** — a configurable layout of lines, spacers, and embedded blocks
   with `{{variable}}` substitution; reusable layout and data templates.

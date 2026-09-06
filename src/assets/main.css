@@ -507,6 +507,72 @@ body {
   gap: 10px;
 }
 
+/* ===== MULTI-SELECT → GROUP ===== */
+.select-checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  background: rgba(233, 69, 96, 0.08);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  font-size: 12px;
+}
+.selection-bar .btn-sm:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Inner folding reuses the outline header; hide duplicated editor labels. */
+.group-inner-fold { border: 1px solid transparent; border-radius: var(--radius); }
+.group-inner-fold.collapsed { border-color: var(--color-border); background: rgba(0, 0, 0, 0.15); }
+.group-inner-fold > .collapse-body > .block > .block-toolbar > .block-type-label { display: none; }
+.group-inner-fold > .collapse-body > .block > .block-toolbar > .block-actions { margin-left: auto; }
+
+/* ===== RELOCATE MENU (move blocks across groups) ===== */
+.move-menu {
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius);
+  background: var(--color-input-bg);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0;
+}
+.move-menu-title {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 6px;
+}
+.move-menu-item {
+  text-align: left;
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-ui);
+  transition: background 0.15s;
+}
+.move-menu-item:hover { background: var(--color-accent2); }
+.move-menu-cancel { background: transparent; color: var(--color-text-muted); }
+.collapse-mini button.toggled {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+.move-toggle-full { width: 100%; }
+
 /* ===== GROUP BLOCK (set-section-style container) ===== */
 .group-block {
   border-color: var(--color-accent2);
