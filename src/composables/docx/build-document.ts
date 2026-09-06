@@ -12,6 +12,7 @@ import { inlineRuns } from './text-runs'
 import { bodyParagraph } from './paragraphs'
 import { makeCounters } from './counters'
 import { buildHeader, buildFooter } from './header-footer'
+import { formulaCacheKey, getCachedFormula, setCachedFormula } from './formula-cache'
 import type { BodyEl } from './blocks'
 import { buildBlock } from './blocks'
 import { buildTitlePage } from './title-page'
@@ -33,8 +34,18 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
   const formulaImages = new Map<string, FormulaImage>()
   const renderFormula = async (b: ReportBlock) => {
     if (b.type === 'formula' && b.latex.trim()) {
-      const img = await renderFormulaPng(b.latex, Math.round(s.fontSize * 1.6))
-      if (img) formulaImages.set(b.id, img)
+      const size = Math.round(s.fontSize * 1.6)
+      const key = formulaCacheKey(b.latex, size)
+      const hit = getCachedFormula(key)
+      if (hit) {
+        formulaImages.set(b.id, hit)
+        return
+      }
+      const img = await renderFormulaPng(b.latex, size)
+      if (img) {
+        formulaImages.set(b.id, img)
+        setCachedFormula(key, img)
+      }
     }
   }
   for (const block of doc.blocks) await renderFormula(block)

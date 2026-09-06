@@ -1058,6 +1058,25 @@ a:focus-visible {
   font-size: 12px;
   font-family: var(--font-ui);
 }
+.preview-progress {
+  flex: 1;
+  max-width: 220px;
+  height: 3px;
+  background: #1c1c1c;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.preview-progress-bar {
+  height: 100%;
+  width: 40%;
+  background: var(--color-accent);
+  border-radius: 2px;
+  animation: preview-slide 1.1s ease-in-out infinite;
+}
+@keyframes preview-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
 .preview-refresh {
   margin-left: auto;
   background: var(--color-surface2);

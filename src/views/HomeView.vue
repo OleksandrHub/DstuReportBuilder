@@ -150,6 +150,8 @@ const previewLoading = ref(false)
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 let renderToken = 0
 let superdoc: SuperDoc | null = null
+// Offscreen staging for the next render (double buffering, see renderPreview).
+let staging: { el: HTMLElement; doc: SuperDoc | null } | null = null
 
 function destroySuperdoc() {
   if (superdoc) {
@@ -158,8 +160,24 @@ function destroySuperdoc() {
   }
 }
 
+function dropStaging() {
+  if (!staging) return
+  try { (staging.doc as unknown as { destroy?: () => void } | null)?.destroy?.() } catch { /* ignore */ }
+  staging.el.remove()
+  staging = null
+}
+
+// The preview pane is display:none on the phone editor tab — offsetParent is
+// null then (or when detached). Rendering into it would produce a blank
+// SuperDoc, so skip: the mobilePane watcher re-renders on switch.
+function isPreviewVisible(): boolean {
+  const el = previewRef.value
+  return !!el && el.offsetParent !== null
+}
+
 async function renderPreview() {
   if (!doc.value || !previewRef.value) return
+  if (!isPreviewVisible()) return
   const token = ++renderToken
   previewLoading.value = true
   previewError.value = null
@@ -170,26 +188,50 @@ async function renderPreview() {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     })
 
-    destroySuperdoc()
-    // Clear the mount node between renders.
-    previewRef.value.innerHTML = ''
+    // Drop any superseded staging left by an interrupted render.
+    dropStaging()
 
-    superdoc = new SuperDoc({
-      selector: previewRef.value,
+    const host = previewRef.value
+    const scroller = host.parentElement
+    const prevTop = scroller ? scroller.scrollTop : 0
+    // Staging must be rendered (measurable) but invisible and out of flow:
+    // visibility:hidden keeps layout boxes, unlike display:none.
+    const stage = document.createElement('div')
+    stage.className = 'superdoc-root'
+    const hostWidth = host.clientWidth || scroller?.clientWidth || 800
+    stage.style.cssText =
+      `position:fixed;left:0;top:0;width:${hostWidth}px;` +
+      'visibility:hidden;pointer-events:none;z-index:-1;'
+    document.body.appendChild(stage)
+
+    const next = new SuperDoc({
+      selector: stage,
       document: file,
       documentMode: 'viewing',
       role: 'viewer',
       disablePiniaDevtools: false,
       onReady: () => {
-        if (token === renderToken) previewLoading.value = false
+        if (token !== renderToken) return // superseded — dropStaging cleans up
+        // Atomic swap: the old preview stays visible until the new one is
+        // ready, so typing never flashes a blank pane.
+        destroySuperdoc()
+        superdoc = next
+        host.innerHTML = ''
+        host.append(...stage.childNodes)
+        stage.remove()
+        staging = null
+        if (scroller) scroller.scrollTop = prevTop
+        previewLoading.value = false
       },
       onContentError: ({ error }) => {
-        if (token === renderToken) {
-          previewError.value = (error as Error)?.message ?? 'Помилка рендеру документа'
-          previewLoading.value = false
-        }
+        if (token !== renderToken) return
+        stage.remove()
+        if (staging?.el === stage) staging = null
+        previewError.value = (error as Error)?.message ?? 'Помилка рендеру документа'
+        previewLoading.value = false
       },
     })
+    staging = { el: stage, doc: next }
   } catch (e) {
     if (token === renderToken) {
       previewError.value = (e as Error)?.message ?? 'Помилка рендеру'
@@ -211,6 +253,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   if (debounceTimer) clearTimeout(debounceTimer)
   destroySuperdoc()
+  dropStaging()
 })
 
 // Re-render whenever the active document changes (deep).
@@ -404,6 +447,9 @@ watch(mobilePane, (pane) => {
     <main class="preview-panel" :class="{ 'mobile-hidden': mobilePane !== 'preview' }">
       <div class="preview-toolbar">
         <span class="preview-label">Перегляд .docx</span>
+        <div v-if="previewLoading" class="preview-progress" role="progressbar" aria-label="Оновлення перегляду">
+          <div class="preview-progress-bar"></div>
+        </div>
         <span v-if="previewLoading" class="preview-status">оновлення…</span>
         <button class="preview-refresh" @click="renderPreview" title="Оновити перегляд" aria-label="Оновити перегляд">⟳</button>
       </div>
