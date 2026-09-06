@@ -59,8 +59,20 @@ function updateHF(which: 'header' | 'footer', field: string, value: string | num
   store.updateSettings({ [which]: { ...cur, [field]: value } } as never)
 }
 
-const fontSizes = [10, 11, 12, 13, 14]
-const fontFamilies = ['Times New Roman', 'Arial', 'Calibri', 'Georgia']
+const fontSizes = [10, 11, 12, 13, 14, 15, 16, 17, 18, 20]
+// Common Ukrainian academic fonts for technical reports
+const fontFamilies = [
+  'Times New Roman',
+  'Arial',
+  'Calibri',
+  'Georgia',
+  'Verdana',
+  'Courier New',
+  'Consolas',
+  'Source Code Pro',
+  'Roboto',
+  'Open Sans',
+]
 const lineSpacings = [1.0, 1.15, 1.5, 2.0]
 
 const hfModes = [

@@ -5,10 +5,12 @@ import Toast from './components/Toast.vue'
 import { RouterView } from 'vue-router'
 import { useReportStore } from './stores/report'
 import { useMobilePane } from './composables/useMobilePane'
+import { useTheme } from './composables/useTheme'
 
 const sidebarOpen = ref(false)
 const store = useReportStore()
 const { mobilePane, show } = useMobilePane()
+const { theme, toggle } = useTheme()
 
 // Global undo/redo shortcuts. Skipped inside editable fields so native
 // text undo keeps working there.
@@ -51,6 +53,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onGlobalKeydown))
         title="Повернути (Ctrl+Shift+Z)"
         aria-label="Повернути скасовану дію"
       >↷</button>
+      <button
+        class="nav-icon-btn"
+        @click="toggle()"
+        :title="theme === 'dark' ? 'Світла тема' : 'Темна тема'"
+        :aria-label="theme === 'dark' ? 'Увімкнути світлу тему' : 'Увімкнути темну тему'"
+      >{{ theme === 'dark' ? '☀' : '☾' }}</button>
       <span class="nav-spacer"></span>
       <span v-if="!store.ready" class="nav-status" title="Завантаження даних зі сховища">⏳ Завантаження…</span>
       <span

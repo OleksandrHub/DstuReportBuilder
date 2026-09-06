@@ -102,6 +102,24 @@ function onUpdateBlock(id: string, data: Partial<ReportBlock>) {
 // so inputs keep focus and state.
 const collapsedBlocks = ref<Record<string, boolean>>({})
 
+// --- Search / filter blocks (relief for long docs) ---
+const blockSearch = ref('')
+function matchesBlock(b: ReportBlock): boolean {
+  const term = blockSearch.value.trim().toLowerCase()
+  if (!term) return true
+  const type = blockTypeName(b).toLowerCase()
+  const summary = blockSummary(b).toLowerCase()
+  if (type.includes(term) || summary.includes(term)) return true
+  return false
+}
+const filteredBlocks = computed(() => {
+  const blocks = doc.value?.blocks ?? []
+  return blocks.filter(matchesBlock)
+})
+function filterBlocks() {
+  // Triggers reactivity re-evaluation via blockSearch ref.
+}
+
 function toggleBlockCollapse(id: string) {
   collapsedBlocks.value[id] = !collapsedBlocks.value[id]
 }
@@ -309,13 +327,26 @@ watch(mobilePane, (pane) => {
           </div>
 
           <template v-if="doc">
+            <div class="blocks-search">
+              <input
+                v-model="blockSearch"
+                class="field-input"
+                type="search"
+                placeholder="Пошук блоків (абзац, текст, заголовок, назва…)…"
+                aria-label="Пошук блоків"
+              />
+            </div>
+            <div v-if="doc.blocks.length === 0" class="empty-blocks-hint">
+              Документ порожній. Додай перший блок нижче.
+            </div>
+
             <div v-if="doc.blocks.length > 1" class="collapse-all-row">
-              <span class="collapse-count">Блоків: {{ doc.blocks.length }}</span>
+              <span class="collapse-count">Блоків: {{ filteredBlocks.length }}</span>
               <span class="collapse-all-spacer"></span>
               <button class="btn-sm" @click="setAllBlocksCollapsed(true)" title="Згорнути всі блоки до заголовків" aria-label="Згорнути всі блоки до заголовків">Згорнути все</button>
               <button class="btn-sm" @click="setAllBlocksCollapsed(false)" title="Розгорнути всі блоки" aria-label="Розгорнути всі блоки">Розгорнути все</button>
             </div>
-            <BlockInserter v-if="doc.blocks.length" @add="store.addBlock($event, undefined, 'start')" />
+            <BlockInserter v-if="filteredBlocks.length" @add="store.addBlock($event, undefined, 'start')" />
             <div v-if="selectedIds.size > 0" class="selection-bar" role="status">
               <span>Вибрано: {{ selectedIds.size }}</span>
               <button
@@ -326,7 +357,7 @@ watch(mobilePane, (pane) => {
               >▤ Згрупувати</button>
               <button class="btn-sm" @click="clearSelection()" title="Скасувати вибір" aria-label="Скасувати вибір">✕</button>
             </div>
-            <template v-for="block in doc.blocks" :key="block.id">
+            <template v-for="block in filteredBlocks" :key="block.id">
               <!-- Groups render with their own head (no outer outline header —
                    it would duplicate the group's title bar). -->
               <BlockRenderer

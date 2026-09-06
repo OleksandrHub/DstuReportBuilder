@@ -17,10 +17,28 @@ const showImportDialog = ref(false)
 const pendingDeleteId = ref<string | null>(null)
 const pendingDeleteName = ref('')
 
+function isDuplicateName(name: string, skipId?: string | null): boolean {
+  const norm = name.trim().toLowerCase()
+  return store.documents.some(d => d.id !== skipId && d.name.trim().toLowerCase() === norm)
+}
+
+function uniqueName(name: string): string {
+  const base = name.trim() || 'Документ'
+  if (!isDuplicateName(base)) return base
+  let n = 2
+  while (isDuplicateName(`${base} (${n})`)) n++
+  return `${base} (${n})`
+}
+
 function startCreate() {
   if (!store.ready) return
-  const name = newDocName.value.trim() || `Лабораторна робота №${store.documents.length + 1}`
-  store.createNewDocument(name)
+  const raw = newDocName.value.trim()
+  const name = raw || `Лабораторна робота №${store.documents.length + 1}`
+  const finalName = uniqueName(name)
+  if (raw && isDuplicateName(raw)) {
+    toast.info(`Документ «${raw}» вже існує — створено як «${finalName}»`)
+  }
+  store.createNewDocument(finalName)
   newDocName.value = ''
 }
 
@@ -31,7 +49,19 @@ function startRename(id: string, currentName: string) {
 
 function confirmRename() {
   if (renamingId.value) {
-    store.renameDocument(renamingId.value, renameValue.value.trim() || 'Без назви')
+    const raw = renameValue.value.trim()
+    const id = renamingId.value
+    if (!raw) {
+      toast.error('Назва не може бути порожньою')
+      return
+    }
+    if (isDuplicateName(raw, id)) {
+      const uniq = uniqueName(raw)
+      toast.info(`Документ «${raw}» вже існує — перейменовано на «${uniq}»`)
+      store.renameDocument(id, uniq)
+    } else {
+      store.renameDocument(id, raw)
+    }
     renamingId.value = null
   }
 }
