@@ -3,6 +3,7 @@ import { ref, computed, nextTick } from 'vue'
 import { useReportStore } from '../../stores/report'
 import { useToast } from '../../composables/useToast'
 import type { TitleLineBlock, TitleSpacerBlock, TitleContentBlock } from '../../types/document'
+import { titleBlockKind, titleBlockSummary } from '../../utils/block-labels'
 import ParagraphBlock from '../blocks/ParagraphBlock.vue'
 import HeadingBlock from '../blocks/HeadingBlock.vue'
 import ImageBlock from '../blocks/ImageBlock.vue'
@@ -10,6 +11,7 @@ import TableBlock from '../blocks/TableBlock.vue'
 import FormulaBlock from '../blocks/FormulaBlock.vue'
 import ListBlock from '../blocks/ListBlock.vue'
 import ColumnsBlock from '../blocks/ColumnsBlock.vue'
+import GroupBlockEditor from '../blocks/GroupBlock.vue'
 
 const store = useReportStore()
 const toast = useToast()
@@ -18,6 +20,18 @@ const doc = computed(() => store.activeDocument)
 const newTemplateName = ref('')
 const showSavePrompt = ref(false)
 const showTemplates = ref(false)
+
+// --- Collapsible title outline (same pattern as content blocks) ---
+const collapsedTitle = ref<Record<string, boolean>>({})
+
+function toggleTitleBlock(id: string) {
+  collapsedTitle.value[id] = !collapsedTitle.value[id]
+}
+
+function setAllTitleCollapsed(value: boolean) {
+  if (!doc.value) return
+  for (const b of doc.value.titleTemplate) collapsedTitle.value[b.id] = value
+}
 
 function saveTpl() {
   const name = newTemplateName.value.trim()
@@ -89,6 +103,7 @@ function toggleRowDetails(id: string) {
 const contentEditors: Record<string, unknown> = {
   paragraph: ParagraphBlock, heading: HeadingBlock, image: ImageBlock,
   table: TableBlock, formula: FormulaBlock, list: ListBlock, columns: ColumnsBlock,
+  group: GroupBlockEditor,
 }
 
 // --- Export / import all templates as a JSON file ---
@@ -171,14 +186,40 @@ function onImportFile(e: Event) {
     </div>
 
     <!-- Title blocks -->
+    <div v-if="doc.titleTemplate.length > 1" class="collapse-all-row">
+      <span class="collapse-count">Блоків: {{ doc.titleTemplate.length }}</span>
+      <span class="collapse-all-spacer"></span>
+      <button class="btn-sm" @click="setAllTitleCollapsed(true)" title="Згорнути всі блоки до заголовків">Згорнути все</button>
+      <button class="btn-sm" @click="setAllTitleCollapsed(false)" title="Розгорнути всі блоки">Розгорнути все</button>
+    </div>
     <div class="title-blocks-list">
       <div v-if="doc.titleTemplate.length === 0" class="tpl-empty">Макет порожній — додай рядок нижче або натисни «↺ Скинути».</div>
       <div
         v-for="block in doc.titleTemplate"
         :key="block.id"
         class="title-block-item"
-        :class="block.type === 'titleSpacer' ? 'spacer-block' : 'line-block'"
+        :class="[
+          block.type === 'titleSpacer' ? 'spacer-block' : 'line-block',
+          { collapsed: !!collapsedTitle[block.id] },
+        ]"
       >
+        <div class="collapse-head">
+          <button
+            class="collapse-toggle"
+            @click="toggleTitleBlock(block.id)"
+            :aria-expanded="!collapsedTitle[block.id]"
+            :title="collapsedTitle[block.id] ? 'Розгорнути блок' : 'Згорнути блок'"
+          >
+            <span class="collapse-chevron" aria-hidden="true">{{ collapsedTitle[block.id] ? '▸' : '▾' }}</span>
+            <span class="collapse-title">{{ titleBlockKind(block) }}</span>
+            <span class="collapse-summary">{{ titleBlockSummary(block) }}</span>
+          </button>
+          <div class="collapse-mini">
+            <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору">↑</button>
+            <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз">↓</button>
+          </div>
+        </div>
+        <div v-show="!collapsedTitle[block.id]" class="collapse-body">
         <!-- SPACER -->
         <template v-if="block.type === 'titleSpacer'">
           <div class="spacer-row">
@@ -318,6 +359,7 @@ function onImportFile(e: Event) {
             />
           </div>
         </template>
+        </div>
       </div>
     </div>
 
@@ -335,6 +377,7 @@ function onImportFile(e: Event) {
       <button class="btn-add-item" @click="store.addTitleContentBlock('formula')">∑ Формула</button>
       <button class="btn-add-item" @click="store.addTitleContentBlock('list')">≡ Список</button>
       <button class="btn-add-item" @click="store.addTitleContentBlock('columns')">▥ Стовпці</button>
+      <button class="btn-add-item" @click="store.addTitleContentBlock('group')" title="Група блоків, що згортається">▤ Група</button>
     </div>
   </div>
 </template>

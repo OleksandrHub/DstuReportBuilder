@@ -14,6 +14,7 @@ export function cloneBlockWithNewIds(block: ReportBlock): ReportBlock {
   else if (copy.type === 'table') copy.rows.forEach(reid)
   else if (copy.type === 'sources') copy.entries.forEach(reid)
   else if (copy.type === 'columns') copy.columns.forEach(c => { reid(c); c.blocks.forEach(reid) })
+  else if (copy.type === 'group') copy.blocks = copy.blocks.map(cloneBlockWithNewIds)
   return copy
 }
 

@@ -191,6 +191,16 @@ export interface ColumnsBlock {
   columns: DocColumn[]
 }
 
+// Transparent organizational container (one level deep: groups cannot contain
+// groups). The title is editor-only — .docx export renders just the children.
+export interface GroupBlock {
+  id: string
+  type: 'group'
+  title: string
+  collapsed?: boolean // default false (open)
+  blocks: ReportBlock[]
+}
+
 export type ReportBlock =
   | ParagraphBlock
   | TextBlock
@@ -205,3 +215,4 @@ export type ReportBlock =
   | TocBlock
   | SourcesBlock
   | ColumnsBlock
+  | GroupBlock

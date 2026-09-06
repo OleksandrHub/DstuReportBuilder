@@ -507,6 +507,115 @@ body {
   gap: 10px;
 }
 
+/* ===== GROUP BLOCK (set-section-style container) ===== */
+.group-block {
+  border-color: var(--color-accent2);
+  background: rgba(83, 52, 131, 0.1);
+}
+.group-head { display: flex; align-items: center; gap: 8px; }
+.group-toggle {
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  color: var(--color-accent);
+  border-radius: 4px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.group-toggle:hover { background: var(--color-accent2); color: #fff; }
+.group-title-input { flex: 1; font-weight: 600; min-width: 0; }
+.group-count {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.group-head .block-actions { flex-shrink: 0; }
+.group-body { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.group-add-row { display: flex; gap: 6px; }
+.group-add-row .block-select { flex: 1; min-width: 0; }
+
+/* ===== COLLAPSIBLE BLOCK OUTLINE ===== */
+.collapse-all-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.collapse-count { font-size: 12px; color: var(--color-text-muted); }
+.collapse-all-spacer { flex: 1; }
+
+.content-block-wrap {
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+.content-block-wrap.collapsed {
+  border-color: var(--color-border);
+  background: var(--color-input-bg);
+}
+
+.collapse-head { display: flex; align-items: center; gap: 4px; }
+.collapse-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--color-text);
+  padding: 6px 8px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  text-align: left;
+  border-radius: var(--radius);
+}
+.collapse-toggle:hover { background: rgba(255, 255, 255, 0.03); }
+.collapse-chevron { color: var(--color-accent); font-size: 12px; width: 14px; flex-shrink: 0; text-align: center; }
+.collapse-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+.collapse-summary {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+.collapse-mini { display: flex; gap: 4px; flex-shrink: 0; }
+.collapse-mini button {
+  background: var(--color-surface2);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: 3px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+.collapse-mini button:hover { background: var(--color-accent2); }
+
+/* The wrapper header is the label now — hide the duplicated inner labels
+   and right-align the editor toolbars. */
+.content-block-wrap .collapse-body > .block > .block-toolbar > .block-type-label { display: none; }
+.content-block-wrap .collapse-body > .block > .block-toolbar > .block-actions { margin-left: auto; }
+.title-block-item > .collapse-body .spacer-row > .block-type-label,
+.title-block-item > .collapse-body .title-content-head > .block-type-label { display: none; }
+.title-block-item > .collapse-body .spacer-row > .block-actions { margin-left: auto; }
+
 /* ===== BLOCKS EDITOR ===== */
 .blocks-editor { display: flex; flex-direction: column; gap: 10px; }
 

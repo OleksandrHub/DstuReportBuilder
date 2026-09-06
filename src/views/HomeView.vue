@@ -8,19 +8,7 @@ import { useDocxExport } from '../composables/useDocxExport'
 import { useToast } from '../composables/useToast'
 import { downloadJsonFile } from '../stores/document-io'
 
-import ParagraphBlock from '../components/blocks/ParagraphBlock.vue'
-import TextBlock from '../components/blocks/TextBlock.vue'
-import HeadingBlock from '../components/blocks/HeadingBlock.vue'
-import ListBlockEditor from '../components/blocks/ListBlock.vue'
-import CodeBlockEditor from '../components/blocks/CodeBlock.vue'
-import ImageBlockEditor from '../components/blocks/ImageBlock.vue'
-import TableBlockEditor from '../components/blocks/TableBlock.vue'
-import FormulaBlockEditor from '../components/blocks/FormulaBlock.vue'
-import PageBreakBlock from '../components/blocks/PageBreakBlock.vue'
-import SpacerBlock from '../components/blocks/SpacerBlock.vue'
-import TocBlock from '../components/blocks/TocBlock.vue'
-import SourcesBlock from '../components/blocks/SourcesBlock.vue'
-import ColumnsBlock from '../components/blocks/ColumnsBlock.vue'
+import BlockRenderer from '../components/blocks/BlockRenderer.vue'
 import TextToolsBar from '../components/blocks/TextToolsBar.vue'
 import BlockInserter from '../components/blocks/BlockInserter.vue'
 import TitlePageEditor from '../components/editor/TitlePageEditor.vue'
@@ -28,6 +16,7 @@ import TitleTemplateEditor from '../components/editor/TitleTemplateEditor.vue'
 import SettingsEditor from '../components/editor/SettingsEditor.vue'
 
 import type { ReportBlock } from '../types/document'
+import { blockTypeName, blockSummary } from '../utils/block-labels'
 
 const store = useReportStore()
 const { doc } = useReport()
@@ -96,6 +85,20 @@ function handleJsonExport() {
 
 function onUpdateBlock(id: string, data: Partial<ReportBlock>) {
   store.updateBlock(id, data)
+}
+
+// --- Collapsible content outline (endless-scroll relief for long docs) ---
+// UI-only state: which blocks are folded. Body stays mounted (v-show),
+// so inputs keep focus and state.
+const collapsedBlocks = ref<Record<string, boolean>>({})
+
+function toggleBlockCollapse(id: string) {
+  collapsedBlocks.value[id] = !collapsedBlocks.value[id]
+}
+
+function setAllBlocksCollapsed(value: boolean) {
+  if (!doc.value) return
+  for (const b of doc.value.blocks) collapsedBlocks.value[b.id] = value
 }
 
 // ===== Live docx preview (SuperDoc) =====
@@ -215,128 +218,42 @@ watch(doc, scheduleRender, { deep: true })
           </div>
 
           <template v-if="doc">
+            <div v-if="doc.blocks.length > 1" class="collapse-all-row">
+              <span class="collapse-count">Блоків: {{ doc.blocks.length }}</span>
+              <span class="collapse-all-spacer"></span>
+              <button class="btn-sm" @click="setAllBlocksCollapsed(true)" title="Згорнути всі блоки до заголовків">Згорнути все</button>
+              <button class="btn-sm" @click="setAllBlocksCollapsed(false)" title="Розгорнути всі блоки">Розгорнути все</button>
+            </div>
             <BlockInserter v-if="doc.blocks.length" @add="store.addBlock($event, undefined, 'start')" />
             <template v-for="block in doc.blocks" :key="block.id">
-              <ParagraphBlock
-                v-if="block.type === 'paragraph'"
-                :block="block"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <TextBlock
-                v-else-if="block.type === 'text'"
-                :block="block"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <HeadingBlock
-                v-else-if="block.type === 'heading'"
-                :block="block"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <ListBlockEditor
-                v-else-if="block.type === 'list'"
-                :block="block"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <CodeBlockEditor
-                v-else-if="block.type === 'code'"
-                :block="block"
-                :index="store.getBlockIndex(block.id, 'code')"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <ImageBlockEditor
-                v-else-if="block.type === 'image'"
-                :block="block"
-                :index="store.getBlockIndex(block.id, 'image')"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <TableBlockEditor
-                v-else-if="block.type === 'table'"
-                :block="block"
-                :index="store.getBlockIndex(block.id, 'table')"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <FormulaBlockEditor
-                v-else-if="block.type === 'formula'"
-                :block="block"
-                :index="store.getBlockIndex(block.id, 'formula')"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <PageBreakBlock
-                v-else-if="block.type === 'pageBreak'"
-                :block="block"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <SpacerBlock
-                v-else-if="block.type === 'spacer'"
-                :block="block"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <TocBlock
-                v-else-if="block.type === 'toc'"
-                :block="block"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <SourcesBlock
-                v-else-if="block.type === 'sources'"
-                :block="block"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
-              <ColumnsBlock
-                v-else-if="block.type === 'columns'"
-                :block="block"
-                @update="onUpdateBlock(block.id, $event)"
-                @remove="store.removeBlock(block.id)"
-                @duplicate="store.duplicateBlock(block.id)"
-                @move-up="store.moveBlock(block.id, 'up')"
-                @move-down="store.moveBlock(block.id, 'down')"
-              />
+              <div class="content-block-wrap" :class="{ collapsed: !!collapsedBlocks[block.id] }">
+                <div class="collapse-head">
+                  <button
+                    class="collapse-toggle"
+                    @click="toggleBlockCollapse(block.id)"
+                    :aria-expanded="!collapsedBlocks[block.id]"
+                    :title="collapsedBlocks[block.id] ? 'Розгорнути блок' : 'Згорнути блок'"
+                  >
+                    <span class="collapse-chevron" aria-hidden="true">{{ collapsedBlocks[block.id] ? '▸' : '▾' }}</span>
+                    <span class="collapse-title">{{ blockTypeName(block) }}</span>
+                    <span class="collapse-summary">{{ blockSummary(block) }}</span>
+                  </button>
+                  <div class="collapse-mini">
+                    <button @click="store.moveBlock(block.id, 'up')" title="Перемістити вгору">↑</button>
+                    <button @click="store.moveBlock(block.id, 'down')" title="Перемістити вниз">↓</button>
+                  </div>
+                </div>
+                <div v-show="!collapsedBlocks[block.id]" class="collapse-body">
+                  <BlockRenderer
+                    :block="block"
+                    @update="onUpdateBlock(block.id, $event)"
+                    @remove="store.removeBlock(block.id)"
+                    @duplicate="store.duplicateBlock(block.id)"
+                    @move-up="store.moveBlock(block.id, 'up')"
+                    @move-down="store.moveBlock(block.id, 'down')"
+                  />
+                </div>
+              </div>
               <BlockInserter @add="store.addBlock($event, block.id)" />
             </template>
           </template>
@@ -355,6 +272,7 @@ watch(doc, scheduleRender, { deep: true })
               <button @click="store.addBlock('toc')">☰ Зміст</button>
               <button @click="store.addBlock('sources')">📚 Джерела</button>
               <button @click="store.addBlock('columns')">▥ Стовпці</button>
+              <button @click="store.addBlock('group')">▤ Група</button>
               <button @click="store.addBlock('pageBreak')">⤓ Нова сторінка</button>
               <button @click="store.addBlock('spacer')">↵ Порожній рядок</button>
             </div>

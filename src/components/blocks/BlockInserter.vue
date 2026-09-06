@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { ReportBlock } from '../../types/document'
 
 // Renders a thin "+" line that, when clicked, reveals block-type buttons and
 // emits the chosen type. The parent passes afterId to control insert position.
+const props = withDefaults(defineProps<{ exclude?: ReportBlock['type'][] }>(), {
+  exclude: () => [],
+})
 const emit = defineEmits<{ add: [type: ReportBlock['type']] }>()
 const open = ref(false)
 
@@ -19,9 +22,12 @@ const types: { type: ReportBlock['type']; label: string }[] = [
   { type: 'toc', label: '☰ Зміст' },
   { type: 'sources', label: '📚 Джерела' },
   { type: 'columns', label: '▥ Стовпці' },
+  { type: 'group', label: '▤ Група' },
   { type: 'pageBreak', label: '⤓ Сторінка' },
   { type: 'spacer', label: '↵ Рядок' },
 ]
+
+const visibleTypes = computed(() => types.filter(t => !props.exclude.includes(t.type)))
 
 function pick(t: ReportBlock['type']) {
   emit('add', t)
@@ -35,7 +41,7 @@ function pick(t: ReportBlock['type']) {
       <span class="inserter-plus">+</span>
     </button>
     <div v-else class="inserter-menu">
-      <button v-for="t in types" :key="t.type" class="inserter-btn" @click="pick(t.type)">{{ t.label }}</button>
+      <button v-for="t in visibleTypes" :key="t.type" class="inserter-btn" @click="pick(t.type)">{{ t.label }}</button>
       <button class="inserter-btn inserter-cancel" @click="open = false">✕</button>
     </div>
   </div>

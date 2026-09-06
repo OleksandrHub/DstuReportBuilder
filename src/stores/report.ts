@@ -13,6 +13,7 @@ import type {
   SourceEntry,
   SourcesBlock,
   ColumnsBlock,
+  GroupBlock,
   TextStyle,
 } from '../types/document'
 import {
@@ -152,14 +153,19 @@ export const useReportStore = defineStore('report', () => {
     if (doc) doc.updatedAt = new Date().toISOString()
   }
 
-  // Find a block by id in the body OR inside a titleContent wrapper in the title
-  // layout — so block editors work the same whether the block sits in the body
-  // or in the title.
+  // Find a block by id in the body, inside a group, OR inside a
+  // titleContent wrapper in the title layout.
   function findBlockById(blockId: string): ReportBlock | undefined {
     const doc = activeDocument.value
     if (!doc) return undefined
     const inBody = doc.blocks.find(b => b.id === blockId)
     if (inBody) return inBody
+    for (const gb of doc.blocks) {
+      if (gb.type === 'group') {
+        const inner = gb.blocks.find(b => b.id === blockId)
+        if (inner) return inner
+      }
+    }
     for (const tb of doc.titleTemplate) {
       if (tb.type === 'titleContent' && tb.block.id === blockId) return tb.block
     }
@@ -297,10 +303,8 @@ export const useReportStore = defineStore('report', () => {
 
   // --- Blocks ---
 
-  function addBlock(type: ReportBlock['type'], afterId?: string, position?: 'start') {
-    const doc = activeDocument.value
-    if (!doc) return
-
+  // Fresh block factory shared by addBlock (top level) and addGroupBlock.
+  function makeBlock(type: ReportBlock['type']): ReportBlock {
     let block: ReportBlock
 
     if (type === 'paragraph') {
@@ -369,6 +373,8 @@ export const useReportStore = defineStore('report', () => {
         title: 'Список використаних джерел',
         entries: [emptySourceEntry()],
       }
+    } else if (type === 'group') {
+      block = { id: generateId(), type: 'group', title: 'Нова група', collapsed: false, blocks: [] }
     } else {
       block = {
         id: generateId(),
@@ -379,6 +385,15 @@ export const useReportStore = defineStore('report', () => {
         ],
       }
     }
+
+    return block
+  }
+
+  function addBlock(type: ReportBlock['type'], afterId?: string, position?: 'start') {
+    const doc = activeDocument.value
+    if (!doc) return
+
+    const block = makeBlock(type)
 
     if (position === 'start') {
       doc.blocks.unshift(block)
@@ -431,7 +446,10 @@ export const useReportStore = defineStore('report', () => {
         if (i.children) applyItems(i.children)
       })
     }
-    for (const b of doc.blocks) {
+    // Groups are transparent: find/replace descends into them.
+    const flat: ReportBlock[] = []
+    flattenBodyBlocks(doc.blocks, flat)
+    for (const b of flat) {
       if (b.type === 'paragraph' || b.type === 'heading' || b.type === 'text') {
         b.text = apply(b.text)!
       } else if (b.type === 'list') {
@@ -509,6 +527,85 @@ export const useReportStore = defineStore('report', () => {
     const idx = doc.blocks.findIndex(b => b.id === id)
     if (idx === -1) return
     doc.blocks[idx] = { ...doc.blocks[idx], ...data } as ReportBlock
+    touchActive()
+  }
+
+  // --- Group blocks (transparent container, one level deep, no nesting) ---
+
+  function findGroup(groupId: string): GroupBlock | undefined {
+    const doc = activeDocument.value
+    if (!doc) return undefined
+    return doc.blocks.find((b): b is GroupBlock => b.type === 'group' && b.id === groupId)
+  }
+
+  // Groups can also live embedded in the title layout (titleContent), so the
+  // inner-block actions resolve them in both places.
+  function findGroupAnywhere(groupId: string): GroupBlock | undefined {
+    const direct = findGroup(groupId)
+    if (direct) return direct
+    const doc = activeDocument.value
+    if (!doc) return undefined
+    for (const tb of doc.titleTemplate) {
+      if (tb.type === 'titleContent' && tb.block.type === 'group' && tb.block.id === groupId) {
+        return tb.block
+      }
+    }
+    return undefined
+  }
+
+  function addGroupBlock(groupId: string, type: ReportBlock['type'], afterInnerId?: string) {
+    if (type === 'group') return // groups cannot contain groups
+    const g = findGroupAnywhere(groupId)
+    if (!g) return
+    const nb = makeBlock(type)
+    if (afterInnerId) {
+      const idx = g.blocks.findIndex(b => b.id === afterInnerId)
+      if (idx !== -1) {
+        g.blocks.splice(idx + 1, 0, nb)
+        touchActive()
+        return
+      }
+    }
+    g.blocks.push(nb)
+    touchActive()
+  }
+
+  function updateGroupBlock(groupId: string, innerId: string, data: Partial<ReportBlock>) {
+    const g = findGroupAnywhere(groupId)
+    if (!g) return
+    const idx = g.blocks.findIndex(b => b.id === innerId)
+    if (idx === -1) return
+    g.blocks[idx] = { ...g.blocks[idx], ...data } as ReportBlock
+    touchActive()
+  }
+
+  function removeGroupBlock(groupId: string, innerId: string) {
+    const g = findGroupAnywhere(groupId)
+    if (!g) return
+    g.blocks = g.blocks.filter(b => b.id !== innerId)
+    touchActive()
+  }
+
+  function duplicateGroupBlock(groupId: string, innerId: string) {
+    const g = findGroupAnywhere(groupId)
+    if (!g) return
+    const idx = g.blocks.findIndex(b => b.id === innerId)
+    if (idx === -1) return
+    g.blocks.splice(idx + 1, 0, cloneBlockWithNewIds(g.blocks[idx]!))
+    touchActive()
+  }
+
+  function moveGroupBlock(groupId: string, innerId: string, direction: 'up' | 'down') {
+    const g = findGroupAnywhere(groupId)
+    if (!g) return
+    const idx = g.blocks.findIndex(b => b.id === innerId)
+    if (idx === -1) return
+    if (direction === 'up' && idx === 0) return
+    if (direction === 'down' && idx === g.blocks.length - 1) return
+    const target = direction === 'up' ? idx - 1 : idx + 1
+    const tmp = g.blocks[idx]!
+    g.blocks[idx] = g.blocks[target]!
+    g.blocks[target] = tmp
     touchActive()
   }
 
@@ -787,10 +884,22 @@ export const useReportStore = defineStore('report', () => {
     touchActive()
   }
 
+  // Flatten top-level blocks, descending into (transparent) groups.
+  // Used by numbering, find/replace and anywhere document order matters.
+  function flattenBodyBlocks(list: ReportBlock[], out: ReportBlock[] = []): ReportBlock[] {
+    for (const b of list) {
+      if (b.type === 'group') flattenBodyBlocks(b.blocks, out)
+      else out.push(b)
+    }
+    return out
+  }
+
   function getBlockIndex(blockId: string, type: ReportBlock['type']): number {
     const doc = activeDocument.value
     if (!doc) return 0
-    const filtered = doc.blocks.filter(b => b.type === type)
+    // Groups are transparent for numbering: count in document order,
+    // descending into groups.
+    const filtered = flattenBodyBlocks(doc.blocks).filter(b => b.type === type)
     return filtered.findIndex(b => b.id === blockId) + 1
   }
 
@@ -834,6 +943,7 @@ export const useReportStore = defineStore('report', () => {
         { id: generateId(), width: 50, blocks: [{ id: generateId(), type: 'paragraph', text: '' }] },
       ],
     }
+    else if (blockType === 'group') inner = { id: generateId(), type: 'group', title: 'Група', collapsed: false, blocks: [] }
     else inner = { id: generateId(), type: 'paragraph', text: '' }
     insertTitleBlock({ id: generateId(), type: 'titleContent', block: inner }, afterId)
   }
@@ -1087,6 +1197,11 @@ export const useReportStore = defineStore('report', () => {
     duplicateBlock,
     moveBlock,
     updateBlock,
+    addGroupBlock,
+    updateGroupBlock,
+    removeGroupBlock,
+    duplicateGroupBlock,
+    moveGroupBlock,
     addListItem,
     addSubListItem,
     addSiblingListItem,

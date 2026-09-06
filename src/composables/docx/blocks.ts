@@ -500,5 +500,35 @@ export function buildBlock(
     return result
   }
 
+  if (block.type === 'group') {
+    // Groups are transparent in export: the title is organizational only,
+    // children render in order with shared counters (numbering flows through).
+    // Mirrors the top-level text/inlineRef merging, scoped to the group.
+    const result: BodyEl[] = []
+    for (const inner of block.blocks) {
+      if (inner.type === 'text') {
+        const prev = result[result.length - 1]
+        if (prev instanceof Paragraph) {
+          for (const run of inlineRuns(inner.text, cfg)) prev.addChildElement(run)
+        } else {
+          result.push(bodyParagraph(inlineRuns(inner.text, cfg), cfg))
+        }
+        continue
+      }
+      const innerOut: { inlineRef?: string } = {}
+      const els = buildBlock(inner, doc, cfg, counters, previewMode, innerOut, formulaImages)
+      if (innerOut.inlineRef) {
+        const prev = result[result.length - 1]
+        if (prev instanceof Paragraph) {
+          for (const run of inlineRuns(` ${innerOut.inlineRef}`, cfg)) prev.addChildElement(run)
+        } else {
+          result.push(bodyParagraph(inlineRuns(innerOut.inlineRef, cfg), cfg))
+        }
+      }
+      result.push(...els)
+    }
+    return result
+  }
+
   return []
 }
