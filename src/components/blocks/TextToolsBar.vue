@@ -2,8 +2,10 @@
 import { ref } from 'vue'
 import { useReportStore } from '../../stores/report'
 
+const props = withDefaults(defineProps<{ expanded?: boolean }>(), { expanded: false })
+
 const store = useReportStore()
-const open = ref(false)
+const open = ref(props.expanded)
 const findText = ref('')
 const replaceText = ref('')
 const caseSensitive = ref(false)
@@ -48,10 +50,10 @@ async function copyOutput() {
 
 <template>
   <div class="text-tools">
-    <button class="text-tools-toggle" @click="open = !open">
+    <button v-if="!expanded" class="text-tools-toggle" @click="open = !open">
       {{ open ? '✕ Інструменти тексту' : '🛠 Інструменти тексту' }}
     </button>
-    <div v-if="open" class="text-tools-panel">
+    <div v-if="open || expanded" class="text-tools-panel">
       <div class="text-tools-row">
         <input class="block-input" v-model="findText" placeholder="Знайти" />
         <input class="block-input" v-model="replaceText" placeholder="Замінити на" />

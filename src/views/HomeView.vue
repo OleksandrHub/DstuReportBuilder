@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { SuperDoc } from '@harbour-enterprises/superdoc'
 import '@harbour-enterprises/superdoc/style.css'
 import { useReportStore } from '../stores/report'
@@ -34,8 +34,52 @@ const { doc } = useReport()
 const { exportToDocx, getPreviewBlob } = useDocxExport()
 const toast = useToast()
 
-type LeftTab = 'titlepage' | 'titleblocks' | 'blocks' | 'settings'
+type LeftTab = 'titlepage' | 'titleblocks' | 'blocks' | 'tools' | 'settings'
 const leftTab = ref<LeftTab>('titlepage')
+
+interface TabMeta {
+  key: LeftTab
+  icon: string
+  label: string
+  hint: string
+}
+
+// Tab presentation: icon + full name + a one-line explanation under the bar,
+// so similarly-named tabs (Макроси vs Титулки) are unambiguous.
+const TABS: TabMeta[] = [
+  {
+    key: 'titlepage',
+    icon: '{{ }}',
+    label: 'Макроси',
+    hint: 'Значення змінних {{…}} для титульної сторінки',
+  },
+  {
+    key: 'titleblocks',
+    icon: '📰',
+    label: 'Титулки',
+    hint: 'Макет титульної сторінки: рядки, відступи, блоки',
+  },
+  {
+    key: 'blocks',
+    icon: '📄',
+    label: 'Основний контент',
+    hint: 'Розділи, текст, рисунки, таблиці, формули, джерела',
+  },
+  {
+    key: 'tools',
+    icon: '🛠',
+    label: 'Інструменти',
+    hint: 'Пошук і заміна, тире, регістр тексту',
+  },
+  {
+    key: 'settings',
+    icon: '⚙',
+    label: 'Налаштування документу',
+    hint: 'Стилі, поля, шрифти, колонтитули, нумерація',
+  },
+]
+
+const activeTabHint = computed(() => TABS.find(t => t.key === leftTab.value)?.hint ?? '')
 
 async function handleExport() {
   if (!doc.value) return
@@ -140,12 +184,22 @@ watch(doc, scheduleRender, { deep: true })
             @input="store.renameDocument(doc!.id, ($event.target as HTMLInputElement).value)"
           />
         </div>
-        <div class="tab-bar">
-          <button :class="['tab', { active: leftTab === 'titlepage' }]" @click="leftTab = 'titlepage'">Дані</button>
-          <button :class="['tab', { active: leftTab === 'titleblocks' }]" @click="leftTab = 'titleblocks'">Макет</button>
-          <button :class="['tab', { active: leftTab === 'blocks' }]" @click="leftTab = 'blocks'">Блоки</button>
-          <button :class="['tab', { active: leftTab === 'settings' }]" @click="leftTab = 'settings'">Стиль</button>
+        <div class="tab-bar" role="tablist" aria-label="Розділи редактора">
+          <button
+            v-for="t in TABS"
+            :key="t.key"
+            :class="['tab', { active: leftTab === t.key }]"
+            role="tab"
+            :aria-selected="leftTab === t.key"
+            :title="`${t.label} — ${t.hint}`"
+            :aria-label="`${t.label} — ${t.hint}`"
+            @click="leftTab = t.key"
+          >
+            <span class="tab-icon" aria-hidden="true">{{ t.icon }}</span>
+            <span class="tab-label">{{ t.label }}</span>
+          </button>
         </div>
+        <div class="tab-hint" aria-hidden="true">{{ activeTabHint }}</div>
       </div>
 
       <div class="panel-body">
@@ -156,7 +210,6 @@ watch(doc, scheduleRender, { deep: true })
         <SettingsEditor v-else-if="leftTab === 'settings'" />
 
         <div v-else-if="leftTab === 'blocks'" class="blocks-editor">
-          <TextToolsBar />
           <div v-if="doc && doc.blocks.length === 0" class="empty-blocks-hint">
             Документ порожній. Додай перший блок нижче.
           </div>
@@ -309,6 +362,10 @@ watch(doc, scheduleRender, { deep: true })
               + Тема / Мета / Висновки / Виконання / Варіант
             </button>
           </div>
+        </div>
+        <div v-else-if="leftTab === 'tools'" class="tools-tab">
+          <h3 class="section-title">Інструменти тексту</h3>
+          <TextToolsBar expanded />
         </div>
         </template>
       </div>
