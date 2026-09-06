@@ -28,6 +28,17 @@ import {
 } from './storage'
 import { migrateDocuments } from './migrations'
 import { cloneBlockWithNewIds, findListItem } from './block-utils'
+import {
+  buildBackupPayload,
+  buildSingleDocumentPayload,
+  serializeBackup,
+  parseImportPayload,
+  sanitizeDocument,
+  backupFileName,
+  documentFileName,
+  type ImportMode,
+  type BackupImportResult,
+} from './document-io'
 
 export const useReportStore = defineStore('report', () => {
   const documents = ref<ReportDocument[]>([])
@@ -902,6 +913,72 @@ export const useReportStore = defineStore('report', () => {
     }
   }
 
+  // --- Full backup export / import (documents + templates, JSON) ---
+
+  function exportBackupFile(): { filename: string; json: string } {
+    return { filename: backupFileName(), json: serializeBackup(buildBackupPayload(currentState())) }
+  }
+
+  function exportDocumentFile(id: string): { filename: string; json: string } | null {
+    const doc = documents.value.find(d => d.id === id)
+    if (!doc) return null
+    return { filename: documentFileName(doc.name), json: serializeBackup(buildSingleDocumentPayload(doc)) }
+  }
+
+  // Import a backup (or a single-document file). 'merge' appends everything
+  // with fresh ids on collision; 'replace' overwrites the whole workspace.
+  function importBackupFile(text: string, mode: ImportMode): BackupImportResult {
+    const parsed = parseImportPayload(text)
+    if (!parsed.ok) {
+      return { error: parsed.error, addedDocs: 0, addedLayouts: 0, addedData: 0, skippedDocs: 0, warnings: [] }
+    }
+    const { documents: incoming, titleTemplates: layouts, titleDataTemplates: data, warnings } = parsed.data
+
+    const validDocs: ReportDocument[] = []
+    let skippedDocs = 0
+    incoming.forEach((raw, i) => {
+      const { doc, error } = sanitizeDocument(raw, i)
+      if (!doc) {
+        skippedDocs++
+        if (error) warnings.push(error)
+        return
+      }
+      migrateDocuments([doc])
+      validDocs.push(doc)
+    })
+
+    if (mode === 'replace') {
+      documents.value = validDocs
+      titleTemplates.value = layouts.map(t => ({ ...t }))
+      titleDataTemplates.value = data.map(t => ({ ...t }))
+      if (documents.value.length === 0) {
+        const fresh = createDocument('Лабораторна робота №1')
+        documents.value.push(fresh)
+      }
+      activeDocumentId.value = documents.value[0]?.id ?? null
+    } else {
+      const existingIds = new Set(documents.value.map(d => d.id))
+      for (const d of validDocs) {
+        if (!d.id || existingIds.has(d.id)) d.id = generateId()
+        existingIds.add(d.id)
+        documents.value.push(d)
+      }
+      titleTemplates.value = [...titleTemplates.value, ...layouts.map(t => ({ ...t, id: generateId() }))]
+      titleDataTemplates.value = [...titleDataTemplates.value, ...data.map(t => ({ ...t, id: generateId() }))]
+      if (!activeDocumentId.value && documents.value.length > 0) {
+        activeDocumentId.value = documents.value[0]!.id
+      }
+    }
+
+    return {
+      addedDocs: validDocs.length,
+      addedLayouts: layouts.length,
+      addedData: data.length,
+      skippedDocs,
+      warnings,
+    }
+  }
+
   return {
     documents,
     activeDocumentId,
@@ -970,5 +1047,8 @@ export const useReportStore = defineStore('report', () => {
     renameDataTemplate,
     exportTemplates,
     importTemplates,
+    exportBackupFile,
+    exportDocumentFile,
+    importBackupFile,
   }
 })

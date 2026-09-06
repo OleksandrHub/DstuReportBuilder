@@ -5,6 +5,8 @@ import '@harbour-enterprises/superdoc/style.css'
 import { useReportStore } from '../stores/report'
 import { useReport } from '../composables/useReport'
 import { useDocxExport } from '../composables/useDocxExport'
+import { useToast } from '../composables/useToast'
+import { downloadJsonFile } from '../stores/document-io'
 
 import ParagraphBlock from '../components/blocks/ParagraphBlock.vue'
 import TextBlock from '../components/blocks/TextBlock.vue'
@@ -30,6 +32,7 @@ import type { ReportBlock } from '../types/document'
 const store = useReportStore()
 const { doc } = useReport()
 const { exportToDocx, getPreviewBlob } = useDocxExport()
+const toast = useToast()
 
 type LeftTab = 'titlepage' | 'titleblocks' | 'blocks' | 'settings'
 const leftTab = ref<LeftTab>('titlepage')
@@ -37,6 +40,14 @@ const leftTab = ref<LeftTab>('titlepage')
 async function handleExport() {
   if (!doc.value) return
   await exportToDocx(doc.value)
+}
+
+function handleJsonExport() {
+  if (!doc.value) return
+  const res = store.exportDocumentFile(doc.value.id)
+  if (!res) return
+  downloadJsonFile(res.filename, res.json)
+  toast.success(`Документ збережено в ${res.filename}`)
 }
 
 function onUpdateBlock(id: string, data: Partial<ReportBlock>) {
@@ -304,7 +315,15 @@ watch(doc, scheduleRender, { deep: true })
 
       <div class="panel-footer">
         <div v-if="store.storageError" class="footer-storage-error" role="alert">⚠ Не вдалося зберегти. Дані лише в памʼяті.</div>
-        <button class="btn-export" :disabled="!store.ready" @click="handleExport">⬇ Завантажити .docx</button>
+        <div class="footer-btn-row">
+          <button class="btn-export" :disabled="!store.ready" @click="handleExport">⬇ Завантажити .docx</button>
+          <button
+            class="btn-json"
+            :disabled="!store.ready || !doc"
+            @click="handleJsonExport"
+            title="Зберегти поточний документ у JSON-файл (повний бекап — у «Мої роботи»)"
+          >⬇ JSON</button>
+        </div>
       </div>
     </aside>
 

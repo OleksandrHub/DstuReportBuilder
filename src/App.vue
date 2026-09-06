@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import DocumentManager from './components/DocumentManager.vue'
+import Toast from './components/Toast.vue'
 import { RouterView } from 'vue-router'
 import { useReportStore } from './stores/report'
 
@@ -42,5 +43,7 @@ const store = useReportStore()
         <RouterView />
       </div>
     </div>
+
+    <Toast />
   </div>
 </template>

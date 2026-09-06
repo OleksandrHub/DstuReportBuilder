@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useReportStore } from '../../stores/report'
+import { useToast } from '../../composables/useToast'
 import type { TitleLineBlock, TitleSpacerBlock, TitleContentBlock } from '../../types/document'
 import ParagraphBlock from '../blocks/ParagraphBlock.vue'
 import HeadingBlock from '../blocks/HeadingBlock.vue'
@@ -11,6 +12,7 @@ import ListBlock from '../blocks/ListBlock.vue'
 import ColumnsBlock from '../blocks/ColumnsBlock.vue'
 
 const store = useReportStore()
+const toast = useToast()
 const doc = computed(() => store.activeDocument)
 
 const newTemplateName = ref('')
@@ -62,7 +64,8 @@ function onImportFile(e: Event) {
   const reader = new FileReader()
   reader.onload = () => {
     const res = store.importTemplates(String(reader.result), 'merge')
-    alert(res ? `Імпортовано: ${res.layout} макетів, ${res.data} наборів даних` : 'Не вдалося прочитати файл шаблонів')
+    if (res) toast.success(`Імпортовано: ${res.layout} макетів, ${res.data} наборів даних`)
+    else toast.error('Не вдалося прочитати файл шаблонів')
   }
   reader.readAsText(file)
   ;(e.target as HTMLInputElement).value = ''
