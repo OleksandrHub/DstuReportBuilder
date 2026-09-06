@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useReportStore } from '../../stores/report'
-import { computed, ref } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import type { NumberingSchemes } from '../../types/document'
 import { resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
 import TextStyleCard from './TextStyleCard.vue'
+import SettingsSection from './SettingsSection.vue'
 import ConfirmDialog from '../ConfirmDialog.vue'
 import { useToast } from '../../composables/useToast'
 
@@ -68,13 +69,96 @@ const hfModes = [
   { value: 'pageNumber', label: 'Номер сторінки' },
   { value: 'textAndPage', label: 'Текст + номер' },
 ] as const
+
+// --- Section navigation: collapsible groups + anchor chips + search ---
+
+interface SectionMeta {
+  id: string
+  title: string
+  keywords: string
+}
+
+const SECTION_DEFS: SectionMeta[] = [
+  { id: 'styles', title: 'Стилі заголовків і тексту', keywords: 'стилі заголовки h1 h2 h3 текст шрифт колір розмір жирний вирівнювання інтервал абзац дсту' },
+  { id: 'base', title: 'Шрифт і абзац', keywords: 'шрифт розмір кегль інтервал міжрядковий абзац відступ times' },
+  { id: 'margins', title: 'Поля сторінки', keywords: 'поля сторінки межі ліве праве верхнє нижнє см сантиметри' },
+  { id: 'prefixes', title: 'Префікси підписів', keywords: 'префікси підписи рисунок лістинг таблиця формула назви captions' },
+  { id: 'numbering', title: 'Нумерація', keywords: 'нумерація номери розділи глави рисунки таблиці' },
+  { id: 'headerfooter', title: 'Колонтитули', keywords: 'колонтитули header footer верхній нижній номер сторінки перша титулка' },
+]
+
+const openSections = ref<Record<string, boolean>>({
+  styles: true,
+  base: true,
+  margins: true,
+  prefixes: true,
+  numbering: true,
+  headerfooter: true,
+})
+const sectionSearch = ref('')
+
+const visibleSectionIds = computed(() => {
+  const q = sectionSearch.value.trim().toLowerCase()
+  if (!q) return new Set(SECTION_DEFS.map(d => d.id))
+  return new Set(
+    SECTION_DEFS.filter(d => `${d.title} ${d.keywords}`.toLowerCase().includes(q)).map(d => d.id),
+  )
+})
+const navSections = computed(() => SECTION_DEFS.filter(d => visibleSectionIds.value.has(d.id)))
+
+// While searching, auto-expand matches so results are immediately visible.
+watch(sectionSearch, () => {
+  if (!sectionSearch.value.trim()) return
+  for (const d of SECTION_DEFS) {
+    if (visibleSectionIds.value.has(d.id)) openSections.value[d.id] = true
+  }
+})
+
+function toggleSection(id: string) {
+  openSections.value[id] = !openSections.value[id]
+}
+
+function goToSection(id: string) {
+  openSections.value[id] = true
+  nextTick(() => {
+    document.getElementById(`set-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
 </script>
 
 <template>
   <div v-if="s" class="settings-editor">
     <h3 class="section-title">Налаштування документа</h3>
 
-    <h4 class="subsection-title">Глобальні стилі заголовків і тексту</h4>
+    <div class="set-nav">
+      <div class="set-search-row">
+        <input
+          class="field-input set-search"
+          v-model="sectionSearch"
+          placeholder="🔍 Пошук налаштувань…"
+          aria-label="Пошук налаштувань"
+        />
+        <button v-if="sectionSearch" class="btn-sm" @click="sectionSearch = ''" title="Очистити пошук">✕</button>
+      </div>
+      <div class="set-chips">
+        <button
+          v-for="sec in navSections"
+          :key="sec.id"
+          class="set-chip"
+          @click="goToSection(sec.id)"
+          :title="`Перейти: ${sec.title}`"
+        >{{ sec.title }}</button>
+      </div>
+      <p v-if="sectionSearch && navSections.length === 0" class="block-hint">Нічого не знайдено</p>
+    </div>
+
+    <SettingsSection
+      section-id="styles"
+      title="Стилі заголовків і тексту"
+      :open="!!openSections.styles"
+      :visible="visibleSectionIds.has('styles')"
+      @toggle="toggleSection('styles')"
+    >
     <div class="global-styles">
       <TextStyleCard
         title="Заголовок першого рівня" badge="H1"
@@ -126,7 +210,15 @@ const hfModes = [
       @confirm="doResetStyles"
       @cancel="showResetStyles = false"
     />
+    </SettingsSection>
 
+    <SettingsSection
+      section-id="base"
+      title="Шрифт і абзац"
+      :open="!!openSections.base"
+      :visible="visibleSectionIds.has('base')"
+      @toggle="toggleSection('base')"
+    >
     <div class="field-group">
       <label>Шрифт</label>
       <select class="field-input" :value="s.fontFamily" @change="update('fontFamily', ($event.target as HTMLSelectElement).value)">
@@ -172,8 +264,15 @@ const hfModes = [
       />
     </div>
 
-    <h4 class="subsection-title">Поля сторінки (см)</h4>
+    </SettingsSection>
 
+    <SettingsSection
+      section-id="margins"
+      title="Поля сторінки (см)"
+      :open="!!openSections.margins"
+      :visible="visibleSectionIds.has('margins')"
+      @toggle="toggleSection('margins')"
+    >
     <div class="field-row-two">
       <div class="field-group">
         <label>Ліве</label>
@@ -193,8 +292,15 @@ const hfModes = [
       </div>
     </div>
 
-    <h4 class="subsection-title">Префікси підписів</h4>
+    </SettingsSection>
 
+    <SettingsSection
+      section-id="prefixes"
+      title="Префікси підписів"
+      :open="!!openSections.prefixes"
+      :visible="visibleSectionIds.has('prefixes')"
+      @toggle="toggleSection('prefixes')"
+    >
     <div class="field-group">
       <label>Рисунки</label>
       <input class="field-input" :value="s.imagePrefix" @input="update('imagePrefix', ($event.target as HTMLInputElement).value)" />
@@ -212,7 +318,15 @@ const hfModes = [
       <input class="field-input" :value="s.formulaPrefix" @input="update('formulaPrefix', ($event.target as HTMLInputElement).value)" />
     </div>
 
-    <h4 class="subsection-title">Нумерація (для кожного типу окремо)</h4>
+    </SettingsSection>
+
+    <SettingsSection
+      section-id="numbering"
+      title="Нумерація"
+      :open="!!openSections.numbering"
+      :visible="visibleSectionIds.has('numbering')"
+      @toggle="toggleSection('numbering')"
+    >
     <div v-for="nt in numberingTypes" :key="nt.key" class="field-group">
       <label>{{ nt.label }}</label>
       <select
@@ -226,7 +340,15 @@ const hfModes = [
       </select>
     </div>
 
-    <h4 class="subsection-title">Колонтитули</h4>
+    </SettingsSection>
+
+    <SettingsSection
+      section-id="headerfooter"
+      title="Колонтитули"
+      :open="!!openSections.headerfooter"
+      :visible="visibleSectionIds.has('headerfooter')"
+      @toggle="toggleSection('headerfooter')"
+    >
     <label class="checkbox-row">
       <input
         type="checkbox"
@@ -316,5 +438,6 @@ const hfModes = [
         </div>
       </div>
     </template>
+    </SettingsSection>
   </div>
 </template>
