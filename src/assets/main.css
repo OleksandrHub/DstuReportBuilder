@@ -1109,6 +1109,9 @@ h3.preview-heading { font-size: 1em; }
 .tpl-actions { display: flex; gap: 4px; }
 .tpl-empty { font-size: 12px; color: var(--color-text-muted); text-align: center; padding: 8px; }
 
+.tpl-io-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.tpl-io-row .btn-sm { flex: 1; }
+
 .template-toolbar {
   display: flex;
   flex-direction: column;
@@ -1327,6 +1330,15 @@ h3.preview-heading { font-size: 1em; }
   font-size: 10px;
   color: #7ec8e3;
   font-family: 'Courier New', monospace;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.var-chip:hover { border-color: var(--color-accent); color: #aee3f5; }
+
+.block-actions button.toggled {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
 }
 
 .title-blocks-list { display: flex; flex-direction: column; gap: 6px; }
@@ -1361,8 +1373,21 @@ h3.preview-heading { font-size: 1em; }
   text-align: center;
 }
 
-.line-row { display: flex; align-items: center; gap: 6px; }
+.line-row { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.line-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
 .line-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+/* Subtle per-row "add after" actions: keeps move/delete rows uncrowded. */
+.title-add-row { display: flex; gap: 6px; margin-top: 6px; }
+.title-add-row .btn-add-item { flex: 1; margin-top: 0; }
+.spacer-row .block-actions { margin-left: auto; }
 
 .align-btns { display: flex; gap: 2px; }
 .align-btn {
@@ -1407,6 +1432,9 @@ h3.preview-heading { font-size: 1em; }
 .line-padding-row label { white-space: nowrap; }
 
 .add-title-block-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
+/* .add-label is designed as a block caption (margin-bottom: 8px) — reset it
+   inside the inline button row so the "+ Блок:" label sits on one line. */
+.add-title-block-row .add-label { margin-bottom: 0; flex-shrink: 0; }
 
 /* Embedded body block inside the title layout */
 .title-content-wrap {

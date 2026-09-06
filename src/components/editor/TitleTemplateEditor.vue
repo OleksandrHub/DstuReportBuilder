@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useReportStore } from '../../stores/report'
 import { useToast } from '../../composables/useToast'
 import type { TitleLineBlock, TitleSpacerBlock, TitleContentBlock } from '../../types/document'
@@ -27,16 +27,62 @@ function saveTpl() {
   showSavePrompt.value = false
 }
 
-const VARS = [
-  '{{ministry}}', '{{university}}', '{{department}}',
-  '{{workType}}', '{{workNumber}}', '{{topic}}', '{{discipline}}',
-  '{{studentGroup}}', '{{studentName}}',
-  '{{teacherTitle}}', '{{teacherName}}',
-  '{{city}}', '{{year}}',
+const VARS: { name: string; desc: string }[] = [
+  { name: '{{ministry}}', desc: 'Міністерство' },
+  { name: '{{university}}', desc: 'Університет' },
+  { name: '{{department}}', desc: 'Кафедра' },
+  { name: '{{workType}}', desc: 'Тип роботи — напр. «лабораторної роботи»' },
+  { name: '{{workNumber}}', desc: 'Номер роботи' },
+  { name: '{{topic}}', desc: 'Тема роботи' },
+  { name: '{{discipline}}', desc: 'Дисципліна' },
+  { name: '{{studentGroup}}', desc: 'Група студента' },
+  { name: '{{studentName}}', desc: 'ПІБ студента' },
+  { name: '{{teacherTitle}}', desc: 'Звання викладача' },
+  { name: '{{teacherName}}', desc: 'ПІБ викладача' },
+  { name: '{{city}}', desc: 'Місто' },
+  { name: '{{year}}', desc: 'Рік' },
 ]
 
-function insertVar(blockId: string, v: string, currentText: string) {
-  store.updateTitleBlock(blockId, { text: currentText + v } as Partial<TitleLineBlock>)
+// --- Variable insertion at the cursor position ---
+// Tracks the caret of the last focused title-line input; clicking a variable
+// chip inserts it there (falls back to appending to the last line).
+const caret = ref<{ blockId: string; start: number; end: number } | null>(null)
+
+function trackCaret(blockId: string, e: Event) {
+  const el = e.target as HTMLInputElement
+  caret.value = {
+    blockId,
+    start: el.selectionStart ?? el.value.length,
+    end: el.selectionEnd ?? el.value.length,
+  }
+}
+
+function insertVar(name: string) {
+  const docVal = doc.value
+  if (!docVal) return
+  const c = caret.value
+  const focused = c ? docVal.titleTemplate.find(b => b.id === c.blockId) : undefined
+  const line = (focused?.type === 'titleLine' ? focused : undefined)
+    ?? [...docVal.titleTemplate].reverse().find((b): b is TitleLineBlock => b.type === 'titleLine')
+  if (!line) return
+  const at = focused && c ? c : { start: line.text.length, end: line.text.length }
+  store.updateTitleBlock(line.id, { text: line.text.slice(0, at.start) + name + line.text.slice(at.end) })
+  // Clicking the chip blurs the input — restore focus and caret.
+  nextTick(() => {
+    const el = document.querySelector<HTMLInputElement>(`input[data-title-line="${line.id}"]`)
+    if (!el) return
+    el.focus()
+    const p = at.start + name.length
+    el.setSelectionRange(p, p)
+    caret.value = { blockId: line.id, start: p, end: p }
+  })
+}
+
+// --- Per-row advanced style (collapsed by default to declutter rows) ---
+const rowDetails = ref<Record<string, boolean>>({})
+
+function toggleRowDetails(id: string) {
+  rowDetails.value[id] = !rowDetails.value[id]
 }
 
 // Map a content block type to its editor component.
@@ -75,12 +121,9 @@ function onImportFile(e: Event) {
 <template>
   <div v-if="doc" class="title-tpl-editor">
     <div class="tpl-toolbar">
-      <button class="btn-sm" @click="store.resetTitleTemplate()" title="Скинути до стандарту">↺ Скинути</button>
-      <button class="btn-sm btn-accent" @click="showSavePrompt = !showSavePrompt">💾 Зберегти шаблон</button>
-      <button class="btn-sm" @click="showTemplates = !showTemplates">📂 Шаблони ({{ store.titleTemplates.length }})</button>
-      <button class="btn-sm" @click="exportTpls" title="Експорт шаблонів у файл">⬇ Експорт</button>
-      <button class="btn-sm" @click="importInput?.click()" title="Імпорт шаблонів із файлу">⬆ Імпорт</button>
-      <input ref="importInput" type="file" accept="application/json,.json" style="display:none" @change="onImportFile" />
+      <button class="btn-sm" @click="store.resetTitleTemplate()" title="Скинути макет до стандартного">↺ Скинути</button>
+      <button class="btn-sm btn-accent" @click="showSavePrompt = !showSavePrompt" title="Зберегти поточний макет як шаблон">💾 Зберегти шаблон</button>
+      <button class="btn-sm" @click="showTemplates = !showTemplates" :title="showTemplates ? 'Сховати список шаблонів' : 'Показати збережені шаблони'">📂 Шаблони ({{ store.titleTemplates.length }})</button>
     </div>
 
     <!-- Save as template prompt -->
@@ -109,17 +152,27 @@ function onImportFile(e: Event) {
       </div>
     </div>
     <div v-else-if="showTemplates" class="tpl-empty">Немає збережених шаблонів</div>
+    <div v-if="showTemplates" class="tpl-io-row">
+      <button class="btn-sm" @click="exportTpls" title="Зберегти всі шаблони макетів у JSON-файл">⬇ Експорт у файл</button>
+      <button class="btn-sm" @click="importInput?.click()" title="Завантажити шаблони макетів із JSON-файлу">⬆ Імпорт із файлу</button>
+      <input ref="importInput" type="file" accept="application/json,.json" style="display:none" @change="onImportFile" />
+    </div>
 
     <!-- Vars hint -->
     <div class="vars-hint">
-      <span class="vars-label">Змінні:</span>
+      <span class="vars-label">Змінні — значення беруться з вкладки «Макроси». Натисни, щоб вставити в позицію курсора:</span>
       <div class="vars-list">
-        <code v-for="v in VARS" :key="v" class="var-chip">{{ v }}</code>
+        <button
+          v-for="v in VARS" :key="v.name" class="var-chip"
+          :title="`${v.name} — ${v.desc}`"
+          @click="insertVar(v.name)"
+        >{{ v.name }}</button>
       </div>
     </div>
 
     <!-- Title blocks -->
     <div class="title-blocks-list">
+      <div v-if="doc.titleTemplate.length === 0" class="tpl-empty">Макет порожній — додай рядок нижче або натисни «↺ Скинути».</div>
       <div
         v-for="block in doc.titleTemplate"
         :key="block.id"
@@ -140,18 +193,33 @@ function onImportFile(e: Event) {
               />
             </div>
             <div class="block-actions">
-              <button @click="store.moveTitleBlock(block.id, 'up')">↑</button>
-              <button @click="store.moveTitleBlock(block.id, 'down')">↓</button>
-              <button @click="store.addTitleBlock('titleLine', block.id)">+рядок</button>
-              <button @click="store.addTitleBlock('titleSpacer', block.id)">+відступ</button>
-              <button class="btn-danger" @click="store.removeTitleBlock(block.id)">✕</button>
+              <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору">↑</button>
+              <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз">↓</button>
+              <button class="btn-danger" @click="store.removeTitleBlock(block.id)" title="Видалити">✕</button>
             </div>
+          </div>
+          <div class="title-add-row">
+            <button class="btn-add-item" @click="store.addTitleBlock('titleLine', block.id)">+ Рядок після</button>
+            <button class="btn-add-item" @click="store.addTitleBlock('titleSpacer', block.id)">+ Відступ після</button>
           </div>
         </template>
 
         <!-- LINE -->
         <template v-else>
           <div class="line-row">
+            <input
+              class="block-input line-text-input"
+              :data-title-line="block.id"
+              :value="(block as TitleLineBlock).text"
+              @input="store.updateTitleBlock(block.id, { text: ($event.target as HTMLInputElement).value })"
+              @focus="trackCaret(block.id, $event)"
+              @click="trackCaret(block.id, $event)"
+              @keyup="trackCaret(block.id, $event)"
+              @select="trackCaret(block.id, $event)"
+              placeholder="Текст рядка або {{змінна}}"
+            />
+          </div>
+          <div class="line-toolbar">
             <div class="line-controls">
               <div class="align-btns">
                 <button
@@ -166,23 +234,20 @@ function onImportFile(e: Event) {
                 @click="store.updateTitleBlock(block.id, { bold: !(block as TitleLineBlock).bold })"
               >B</button>
             </div>
-
-            <input
-              class="block-input line-text-input"
-              :value="(block as TitleLineBlock).text"
-              @input="store.updateTitleBlock(block.id, { text: ($event.target as HTMLInputElement).value })"
-              placeholder="Текст рядка або {{змінна}}"
-            />
-
             <div class="block-actions">
               <button @click="store.moveTitleBlock(block.id, 'up')" title="Вгору">↑</button>
               <button @click="store.moveTitleBlock(block.id, 'down')" title="Вниз">↓</button>
-              <button @click="store.addTitleBlock('titleLine', block.id)" title="Рядок після">+L</button>
-              <button @click="store.addTitleBlock('titleSpacer', block.id)" title="Відступ після">+S</button>
-              <button class="btn-danger" @click="store.removeTitleBlock(block.id)">✕</button>
+              <button :class="{ toggled: rowDetails[block.id] }" @click="toggleRowDetails(block.id)" title="Стиль рядка: розмір, колір, відступи">⚙</button>
+              <button class="btn-danger" @click="store.removeTitleBlock(block.id)" title="Видалити">✕</button>
             </div>
           </div>
+          <div class="title-add-row">
+            <button class="btn-add-item" @click="store.addTitleBlock('titleLine', block.id)" title="Додати рядок після цього">+ Рядок після</button>
+            <button class="btn-add-item" @click="store.addTitleBlock('titleSpacer', block.id)" title="Додати відступ після цього">+ Відступ після</button>
+          </div>
 
+          <!-- Advanced style (collapsed by default) -->
+          <template v-if="rowDetails[block.id]">
           <!-- Padding controls row -->
           <div class="line-padding-row">
             <label>Відступ зліва (см):</label>
@@ -227,6 +292,7 @@ function onImportFile(e: Event) {
               @input="store.updateTitleBlock(block.id, { color: ($event.target as HTMLInputElement).value.replace('#','').toUpperCase() })"
             />
           </div>
+          </template>
         </template>
 
         <!-- CONTENT BLOCK (any body block embedded in the title) -->
