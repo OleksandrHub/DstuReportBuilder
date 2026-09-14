@@ -2,6 +2,7 @@
 import { useReportStore } from '../../stores/report'
 import { resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
 import type { TextStyle } from '../../types/document'
+import NumberInput from './NumberInput.vue'
 
 interface StyleProps {
   align?: 'left' | 'center' | 'right' | 'justify'
@@ -46,10 +47,7 @@ function fallback(): TextStyle {
   }
 }
 
-const fontSize = () => props.block.fontSize ?? fallback().fontSize
-const lineSpacing = () => props.block.lineSpacing ?? fallback().lineSpacing
 const fontFamily = () => props.block.fontFamily ?? fallback().fontFamily
-const indent = () => props.block.indent ?? fallback().indent
 const color = () => '#' + (props.block.color ?? fallback().color)
 const effAlign = () => props.block.align ?? fallback().align
 
@@ -94,33 +92,42 @@ function setColor(hex: string) {
     </select>
 
     <!-- Font size -->
-    <input
-      type="number" min="8" max="36" step="1"
-      class="style-number"
-      :value="fontSize()"
-      @input="emit('update', { fontSize: parseInt(($event.target as HTMLInputElement).value) || undefined })"
-      title="Розмір шрифту (pt)"
+    <NumberInput
+      :model-value="props.block.fontSize"
+      :default-value="fallback().fontSize"
+      :min="8" :max="36" :step="1"
+      :allow-empty="true"
+      placeholder="авто"
+      title="Розмір шрифту (pt), порожньо = авто"
+      aria-label="Розмір шрифту"
+      @update:model-value="emit('update', { fontSize: $event })"
     />
     <span class="style-unit">pt</span>
 
     <!-- Line spacing -->
-    <input
-      type="number" min="1" max="3" step="0.5"
-      class="style-number"
-      :value="lineSpacing()"
-      @input="emit('update', { lineSpacing: parseFloat(($event.target as HTMLInputElement).value) || undefined })"
-      title="Міжрядковий інтервал"
+    <NumberInput
+      :model-value="props.block.lineSpacing"
+      :default-value="fallback().lineSpacing"
+      :min="1" :max="3" :step="0.5"
+      :allow-empty="true"
+      placeholder="авто"
+      title="Міжрядковий інтервал, порожньо = авто"
+      aria-label="Міжрядковий інтервал"
+      @update:model-value="emit('update', { lineSpacing: $event })"
     />
     <span class="style-unit">інт</span>
 
     <!-- First-line indent (only for block types that support it) -->
     <template v-if="props.showIndent">
-      <input
-        type="number" min="0" max="5" step="0.25"
-        class="style-number"
-        :value="indent()"
-        @input="emit('update', { indent: parseFloat(($event.target as HTMLInputElement).value) })"
-        title="Абзацний відступ (см)"
+      <NumberInput
+        :model-value="props.block.indent"
+        :default-value="fallback().indent"
+        :min="0" :max="5" :step="0.25"
+        :allow-empty="true"
+        placeholder="авто"
+        title="Абзацний відступ (см), порожньо = авто"
+        aria-label="Абзацний відступ"
+        @update:model-value="emit('update', { indent: $event })"
       />
       <span class="style-unit">см</span>
     </template>

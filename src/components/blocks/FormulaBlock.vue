@@ -5,6 +5,7 @@ import 'katex/dist/katex.min.css'
 import type { FormulaBlock } from '../../types/document'
 import MarkerHint from './MarkerHint.vue'
 import BlockStyleRow from './BlockStyleRow.vue'
+import NumberInput from './NumberInput.vue'
 
 const props = defineProps<{ block: FormulaBlock; index: number }>()
 const emit = defineEmits<{
@@ -84,16 +85,15 @@ watch(() => props.block.latex, renderPreview)
         placeholder="Назва формули"
       />
     </div>
-    <div class="space-after-row">
-      <span class="style-label">Рядків після підпису:</span>
-      <input
-        type="number"
-        class="style-number"
-        min="0" max="5" step="1"
-        :value="props.block.spaceAfterCaption ?? 1"
-        @input="emit('update', { spaceAfterCaption: parseInt(($event.target as HTMLInputElement).value) || 1 })"
-        title="Кількість порожніх рядків між підписом і формулою"
-        aria-label="Рядків після підпису"
+    <div class="space-after-row" v-if="props.block.referenceText">
+      <span class="style-label">Рядків після посилання в тексті:</span>
+      <NumberInput
+        :model-value="props.block.spaceAfterReference ?? (props.block as { spaceAfterCaption?: number }).spaceAfterCaption ?? 1"
+        :default-value="1"
+        :min="0" :max="5" :step="1"
+        title="Кількість порожніх рядків між посиланням у тексті та формулою"
+        aria-label="Рядків після посилання в тексті"
+        @update:model-value="emit('update', { spaceAfterReference: $event ?? 1 })"
       />
     </div>
 

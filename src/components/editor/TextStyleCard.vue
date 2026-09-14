@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { TextStyle, TextAlign } from '../../types/document'
+import NumberInput from '../blocks/NumberInput.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -42,11 +43,6 @@ const previewStyle = computed(() => ({
 function set<K extends keyof TextStyle>(key: K, value: TextStyle[K]) {
   emit('update', { [key]: value } as Partial<TextStyle>)
 }
-
-function num(e: Event): number | undefined {
-  const v = parseFloat((e.target as HTMLInputElement).value)
-  return Number.isFinite(v) ? v : undefined
-}
 </script>
 
 <template>
@@ -68,10 +64,14 @@ function num(e: Event): number | undefined {
       </div>
       <div class="field-group">
         <label>Розмір (pt)</label>
-        <input
-          class="field-input" type="number" min="8" max="36" step="1"
-          :value="modelValue.fontSize"
-          @input="set('fontSize', num($event) ?? modelValue.fontSize)"
+        <NumberInput
+          input-class="field-input"
+          :model-value="modelValue.fontSize"
+          :default-value="14"
+          :min="8" :max="36" :step="1"
+          title="Розмір шрифту (pt)"
+          aria-label="Розмір шрифту"
+          @update:model-value="set('fontSize', $event ?? 14)"
         />
       </div>
       <div class="field-group">
@@ -93,18 +93,26 @@ function num(e: Event): number | undefined {
       </div>
       <div class="field-group">
         <label>Інтервал</label>
-        <input
-          class="field-input" type="number" min="1" max="3" step="0.25"
-          :value="modelValue.lineSpacing"
-          @input="set('lineSpacing', num($event) ?? modelValue.lineSpacing)"
+        <NumberInput
+          input-class="field-input"
+          :model-value="modelValue.lineSpacing"
+          :default-value="1.5"
+          :min="1" :max="3" :step="0.25"
+          title="Міжрядковий інтервал"
+          aria-label="Міжрядковий інтервал"
+          @update:model-value="set('lineSpacing', $event ?? 1.5)"
         />
       </div>
       <div class="field-group">
         <label>Абзац (см)</label>
-        <input
-          class="field-input" type="number" min="0" max="5" step="0.25"
-          :value="modelValue.indent"
-          @input="set('indent', num($event) ?? modelValue.indent)"
+        <NumberInput
+          input-class="field-input"
+          :model-value="modelValue.indent"
+          :default-value="1.25"
+          :min="0" :max="5" :step="0.25"
+          title="Абзацний відступ (см)"
+          aria-label="Абзацний відступ"
+          @update:model-value="set('indent', $event ?? 1.25)"
         />
       </div>
     </div>

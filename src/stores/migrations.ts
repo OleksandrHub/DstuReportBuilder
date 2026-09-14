@@ -93,6 +93,31 @@ export function migrateDocuments(rawDocs: ReportDocument[]): void {
     }
   }
 
+  // Migrate: spaceAfterCaption → spaceAfterReference (the setting controls
+  // empty lines after the reference paragraph in text, not after the caption).
+  for (const doc of rawDocs) {
+    if (!doc.blocks) continue
+    const migrateBlock = (b: ReportBlock) => {
+      if (b.type === 'code' || b.type === 'image' || b.type === 'table' || b.type === 'formula') {
+        const legacy = (b as { spaceAfterCaption?: number }).spaceAfterCaption
+        if ((b as { spaceAfterReference?: number }).spaceAfterReference === undefined && legacy !== undefined) {
+          (b as { spaceAfterReference?: number }).spaceAfterReference = legacy
+        }
+        delete (b as { spaceAfterCaption?: number }).spaceAfterCaption
+      }
+      if (b.type === 'group') b.blocks.forEach(migrateBlock)
+    }
+    for (const b of doc.blocks) migrateBlock(b)
+    // Title-embedded blocks (titleContent wrappers, incl. groups in title).
+    if (Array.isArray(doc.titleTemplate)) {
+      for (const tb of doc.titleTemplate) {
+        if ((tb as { type?: string }).type === 'titleContent') {
+          migrateBlock((tb as { block: ReportBlock }).block)
+        }
+      }
+    }
+  }
+
   // Migrate: convert old intro field into paragraph blocks prepended to blocks[]
   for (const doc of rawDocs) {
     const d = doc as ReportDocument & { intro?: { topic?: string; goal?: string; variant?: string } }

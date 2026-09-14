@@ -95,7 +95,9 @@ export interface CodeBlock {
   bold?: boolean
   color?: string
   noTrailingSpace?: boolean
-  spaceAfterCaption?: number // empty lines after caption (default 1)
+  spaceAfterReference?: number // empty lines after the reference paragraph (default 1)
+  /** @deprecated renamed to spaceAfterReference — kept for old saved docs */
+  spaceAfterCaption?: number
 }
 
 export interface ImageBlock {
@@ -108,6 +110,9 @@ export interface ImageBlock {
   noTrailingSpace?: boolean
   width?: number   // px; height scales proportionally if unset
   height?: number  // px
+  naturalWidth?: number  // px, measured from the uploaded file (for ratio)
+  naturalHeight?: number // px, measured from the uploaded file (for ratio)
+  keepRatio?: boolean    // auto-keep width/height proportional (default true)
   // Caption formatting.
   bold?: boolean
   align?: 'left' | 'center' | 'right' | 'justify'
@@ -115,7 +120,9 @@ export interface ImageBlock {
   fontFamily?: string
   lineSpacing?: number
   color?: string
-  spaceAfterCaption?: number // empty lines after caption (default 1)
+  spaceAfterReference?: number // empty lines after the reference paragraph (default 1)
+  /** @deprecated renamed to spaceAfterReference — kept for old saved docs */
+  spaceAfterCaption?: number
 }
 
 export interface TableCell {
@@ -148,7 +155,9 @@ export interface TableBlock {
   fullWidth?: boolean       // stretch to content width (default true)
   columnWidths?: number[]   // relative width per column in %; empty = equal
   noTrailingSpace?: boolean
-  spaceAfterCaption?: number // empty lines after caption (default 1)
+  spaceAfterReference?: number // empty lines after the reference paragraph (default 1)
+  /** @deprecated renamed to spaceAfterReference — kept for old saved docs */
+  spaceAfterCaption?: number
 }
 
 export interface FormulaBlock {
@@ -167,7 +176,9 @@ export interface FormulaBlock {
   fontFamily?: string
   lineSpacing?: number
   color?: string
-  spaceAfterCaption?: number // empty lines after caption (default 1)
+  spaceAfterReference?: number // empty lines after the reference paragraph (default 1)
+  /** @deprecated renamed to spaceAfterReference — kept for old saved docs */
+  spaceAfterCaption?: number
 }
 
 export interface SourcesBlock {

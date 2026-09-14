@@ -2,6 +2,7 @@
 import type { ColumnsBlock, ReportBlock, ParagraphBlock, HeadingBlock } from '../../types/document'
 import { useReportStore } from '../../stores/report'
 import BlockStyleRow from './BlockStyleRow.vue'
+import NumberInput from './NumberInput.vue'
 
 const props = defineProps<{ block: ColumnsBlock }>()
 const emit = defineEmits<{
@@ -54,10 +55,13 @@ function updInner(colId: string, innerId: string, data: Partial<ReportBlock>) {
       <div v-for="col in props.block.columns" :key="col.id" class="column-edit">
         <div class="column-head">
           <span class="style-label">Ширина %:</span>
-          <input
-            type="number" min="5" max="95" step="1" class="style-number"
-            :value="col.width"
-            @input="store.setColumnWidth(props.block.id, col.id, parseInt(($event.target as HTMLInputElement).value) || 50)"
+          <NumberInput
+            :model-value="col.width"
+            :default-value="50"
+            :min="5" :max="95" :step="1"
+            title="Ширина стовпця у відсотках"
+            :aria-label="`Ширина стовпця`"
+            @update:model-value="store.setColumnWidth(props.block.id, col.id, $event ?? 50)"
           />
         </div>
 

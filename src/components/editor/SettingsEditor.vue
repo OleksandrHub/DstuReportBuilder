@@ -6,6 +6,7 @@ import { resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
 import TextStyleCard from './TextStyleCard.vue'
 import SettingsSection from './SettingsSection.vue'
 import ConfirmDialog from '../ConfirmDialog.vue'
+import NumberInput from '../blocks/NumberInput.vue'
 import { useToast } from '../../composables/useToast'
 
 const store = useReportStore()
@@ -264,15 +265,14 @@ function goToSection(id: string) {
 
     <div class="field-group">
       <label>Абзацний відступ (см)</label>
-      <input
-        class="field-input"
-        style="width: 80px"
-        type="number"
-        step="0.25"
-        min="0"
-        max="3"
-        :value="s.paragraphIndent"
-        @input="update('paragraphIndent', parseFloat(($event.target as HTMLInputElement).value))"
+      <NumberInput
+        input-class="field-input"
+        :model-value="s.paragraphIndent"
+        :default-value="1.25"
+        :min="0" :max="3" :step="0.25"
+        title="Абзацний відступ (см)"
+        aria-label="Абзацний відступ"
+        @update:model-value="update('paragraphIndent', $event ?? 1.25)"
       />
     </div>
 
@@ -288,19 +288,19 @@ function goToSection(id: string) {
     <div class="field-row-two">
       <div class="field-group">
         <label>Ліве</label>
-        <input class="field-input" type="number" step="0.5" min="0" :value="s.marginLeft" @input="update('marginLeft', parseFloat(($event.target as HTMLInputElement).value))" />
+        <NumberInput input-class="field-input" :model-value="s.marginLeft" :default-value="3" :min="0" :step="0.5" title="Ліве поле (см)" aria-label="Ліве поле" @update:model-value="update('marginLeft', $event ?? 3)" />
       </div>
       <div class="field-group">
         <label>Праве</label>
-        <input class="field-input" type="number" step="0.5" min="0" :value="s.marginRight" @input="update('marginRight', parseFloat(($event.target as HTMLInputElement).value))" />
+        <NumberInput input-class="field-input" :model-value="s.marginRight" :default-value="1.5" :min="0" :step="0.5" title="Праве поле (см)" aria-label="Праве поле" @update:model-value="update('marginRight', $event ?? 1.5)" />
       </div>
       <div class="field-group">
         <label>Верхнє</label>
-        <input class="field-input" type="number" step="0.5" min="0" :value="s.marginTop" @input="update('marginTop', parseFloat(($event.target as HTMLInputElement).value))" />
+        <NumberInput input-class="field-input" :model-value="s.marginTop" :default-value="2" :min="0" :step="0.5" title="Верхнє поле (см)" aria-label="Верхнє поле" @update:model-value="update('marginTop', $event ?? 2)" />
       </div>
       <div class="field-group">
         <label>Нижнє</label>
-        <input class="field-input" type="number" step="0.5" min="0" :value="s.marginBottom" @input="update('marginBottom', parseFloat(($event.target as HTMLInputElement).value))" />
+        <NumberInput input-class="field-input" :model-value="s.marginBottom" :default-value="2" :min="0" :step="0.5" title="Нижнє поле (см)" aria-label="Нижнє поле" @update:model-value="update('marginBottom', $event ?? 2)" />
       </div>
     </div>
 
@@ -372,14 +372,14 @@ function goToSection(id: string) {
 
     <div class="field-group">
       <label>Початковий номер сторінки</label>
-      <input
-        class="field-input"
-        style="width: 80px"
-        type="number"
-        min="0"
-        step="1"
-        :value="s.pageNumberStart"
-        @input="store.updateSettings({ pageNumberStart: parseInt(($event.target as HTMLInputElement).value) || 1 })"
+      <NumberInput
+        input-class="field-input"
+        :model-value="s.pageNumberStart"
+        :default-value="1"
+        :min="0" :step="1"
+        title="Початковий номер сторінки"
+        aria-label="Початковий номер сторінки"
+        @update:model-value="store.updateSettings({ pageNumberStart: $event ?? 1 })"
       />
     </div>
 
@@ -412,7 +412,15 @@ function goToSection(id: string) {
         </div>
         <div class="field-group">
           <label>Розмір (pt)</label>
-          <input class="field-input" type="number" min="8" max="20" step="1" :value="s.header.fontSize" @input="updateHF('header', 'fontSize', parseInt(($event.target as HTMLInputElement).value) || 12)" />
+          <NumberInput
+            input-class="field-input"
+            :model-value="s.header.fontSize"
+            :default-value="12"
+            :min="8" :max="20" :step="1"
+            title="Розмір шрифту колонтитула"
+            aria-label="Розмір шрифту верхнього колонтитула"
+            @update:model-value="updateHF('header', 'fontSize', $event ?? 12)"
+          />
         </div>
       </div>
     </template>
@@ -446,7 +454,15 @@ function goToSection(id: string) {
         </div>
         <div class="field-group">
           <label>Розмір (pt)</label>
-          <input class="field-input" type="number" min="8" max="20" step="1" :value="s.footer.fontSize" @input="updateHF('footer', 'fontSize', parseInt(($event.target as HTMLInputElement).value) || 12)" />
+          <NumberInput
+            input-class="field-input"
+            :model-value="s.footer.fontSize"
+            :default-value="12"
+            :min="8" :max="20" :step="1"
+            title="Розмір шрифту колонтитула"
+            aria-label="Розмір шрифту нижнього колонтитула"
+            @update:model-value="updateHF('footer', 'fontSize', $event ?? 12)"
+          />
         </div>
       </div>
     </template>

@@ -26,6 +26,37 @@ import type { FontConfig } from './text-runs'
 
 export type BodyEl = Paragraph | Table | TableOfContents
 
+// Empty lines after the "посилання в тексті" paragraph.
+// spaceAfterCaption is the legacy name of the same setting (migrated on load,
+// but old backups may still carry it) — honour it as a fallback.
+function refGap(block: { spaceAfterReference?: number; spaceAfterCaption?: number }): number {
+  return block.spaceAfterReference ?? block.spaceAfterCaption ?? 1
+}
+
+// One code source line → one docx paragraph that keeps every indent/space.
+// Word ignores "\n" inside <w:t> (needs <w:br/>) and may collapse runs of
+// spaces, so each line gets its own paragraph; tabs are expanded and leading
+// spaces become non-breaking to survive any renderer.
+export function codeLineParagraph(
+  line: string,
+  opts: { font: string; size: number; spacing: number; bold?: boolean; color?: string },
+): Paragraph {
+  const expanded = line.replace(/\t/g, '    ').replace(/\s+$/, '')
+  const leading = expanded.match(/^ */)?.[0].length ?? 0
+  const safe = '\u00A0'.repeat(leading) + expanded.slice(leading)
+  return new Paragraph({
+    children: [new TextRun({
+      text: safe,
+      font: opts.font,
+      size: opts.size,
+      bold: opts.bold,
+      color: opts.color,
+    })],
+    alignment: AlignmentType.LEFT,
+    spacing: { line: Math.round(opts.spacing * 240), lineRule: 'auto' as never },
+  })
+}
+
 export function buildBlock(
   block: ReportBlock,
   doc: ReportDocument,
@@ -232,6 +263,7 @@ export function buildBlock(
         out.inlineRef = refText
       } else {
         result.push(bodyParagraph(inlineRuns(refText, fCfg, fBold), fCfg))
+        result.push(...emptyParagraphs(cfg, refGap(block)))
       }
     }
 
@@ -242,7 +274,6 @@ export function buildBlock(
 
     if (block.caption) {
       result.push(captionParagraph(`${s.formulaPrefix} ${num} – ${block.caption}`, fCfg, fAlign))
-      result.push(...emptyParagraphs(cfg, block.spaceAfterCaption ?? 1))
     }
     if (!block.noTrailingSpace) result.push(emptyParagraph(cfg))
 
@@ -311,23 +342,34 @@ export function buildBlock(
         out.inlineRef = refText
       } else {
         result.push(bodyParagraph(inlineRuns(refText, cfg), cfg))
+        result.push(...emptyParagraphs(cfg, refGap(block)))
+      }
+    } else {
+      result.push(emptyParagraph(cfg))
+    }
+    result.push(captionParagraph(`${s.listingPrefix} ${num} – ${block.caption}`, cfg))
+    result.push(emptyParagraph(cfg))
+    // Код — по рядках: кожен рядок окремим параграфом, щоб зберегти
+    // всі відступи та пробіли (Word ігнорує "\n" всередині <w:t>).
+    const codeLines = (block.code ?? '').replace(/\r\n/g, '\n').split('\n')
+    const codeOpts = {
+      font: block.fontFamily || 'Courier New',
+      size: codeSize,
+      spacing: codeSpacing,
+      bold: block.bold,
+      color: block.color,
+    }
+    if (codeLines.length === 0) {
+      result.push(emptyParagraph(cfg))
+    } else {
+      for (const line of codeLines) {
+        if (line.trim() === '') {
+          result.push(emptyParagraph(cfg))
+        } else {
+          result.push(codeLineParagraph(line, codeOpts))
+        }
       }
     }
-    result.push(emptyParagraph(cfg))
-    result.push(captionParagraph(`${s.listingPrefix} ${num} – ${block.caption}`, cfg))
-    result.push(...emptyParagraphs(cfg, block.spaceAfterCaption ?? 1))
-    result.push(
-      new Paragraph({
-        children: [new TextRun({
-          text: block.code,
-          font: block.fontFamily || 'Courier New',
-          size: codeSize,
-          bold: block.bold,
-          color: block.color,
-        })],
-        spacing: { line: Math.round(codeSpacing * 240), lineRule: 'auto' as never },
-      })
-    )
     if (!block.noTrailingSpace) result.push(emptyParagraph(cfg))
 
     return result
@@ -344,9 +386,11 @@ export function buildBlock(
         out.inlineRef = refText
       } else {
         result.push(bodyParagraph(inlineRuns(refText, cfg), cfg))
+        result.push(...emptyParagraphs(cfg, refGap(block)))
       }
+    } else {
+      result.push(emptyParagraph(cfg))
     }
-    result.push(emptyParagraph(cfg))
 
     if (block.src && block.src.startsWith('data:')) {
       try {
@@ -356,7 +400,15 @@ export function buildBlock(
         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
 
         const w = block.width && block.width > 0 ? block.width : 400
-        const h = block.height && block.height > 0 ? block.height : Math.round(w * 0.75)
+        let h: number
+        if (block.height && block.height > 0) {
+          h = block.height
+        } else if (block.naturalWidth && block.naturalHeight && block.naturalWidth > 0 && block.naturalHeight > 0) {
+          // Справжнє співвідношення сторін завантаженого файлу.
+          h = Math.max(1, Math.round((w * block.naturalHeight) / block.naturalWidth))
+        } else {
+          h = Math.round(w * 0.75)
+        }
         result.push(
           new Paragraph({
             children: [new ImageRun({ data: bytes, transformation: { width: w, height: h }, type: 'png' })],
@@ -381,7 +433,6 @@ export function buildBlock(
         spacing: { line: Math.round(capCfg.lineSpacing * 240), lineRule: 'auto' as never },
       })
     )
-    result.push(...emptyParagraphs(cfg, block.spaceAfterCaption ?? 1))
     if (!block.noTrailingSpace) result.push(emptyParagraph(cfg))
 
     return result
@@ -410,9 +461,11 @@ export function buildBlock(
         out.inlineRef = refText
       } else {
         result.push(bodyParagraph(inlineRuns(refText, cfg), cfg))
+        result.push(...emptyParagraphs(cfg, refGap(block)))
       }
+    } else {
+      result.push(emptyParagraph(cfg))
     }
-    result.push(emptyParagraph(cfg))
 
     const makeBorder = () => ({
       top: { style: BorderStyle.SINGLE, size: 1 },
@@ -492,7 +545,7 @@ export function buildBlock(
         result.push(emptyParagraph(cfg))
         result.push(captionParagraph(`Продовження таблиці ${num} – ${block.caption}`, cfg, AlignmentType.RIGHT))
       }
-      result.push(...emptyParagraphs(cfg, block.spaceAfterCaption ?? 1))
+      result.push(emptyParagraph(cfg))
       result.push(new Table({
         rows: [makeHeaderRow(), ...chunk.map(makeDataRow)],
         width: tableWidth,

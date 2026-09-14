@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { TableBlock } from '../../types/document'
 import { useReportStore } from '../../stores/report'
 import MarkerHint from './MarkerHint.vue'
+import NumberInput from './NumberInput.vue'
 
 const props = defineProps<{ block: TableBlock; index: number }>()
 const emit = defineEmits<{
@@ -134,17 +135,23 @@ function openMdWithCurrent() {
         <option value="Courier New">Courier New</option>
       </select>
       <span class="style-label">Розмір:</span>
-      <input type="number" min="8" max="24" step="1" class="style-number"
-        :value="props.block.fontSize ?? 12"
-        @input="emit('update', { fontSize: parseInt(($event.target as HTMLInputElement).value) || 12 })"
+      <NumberInput
+        :model-value="props.block.fontSize ?? 12"
+        :default-value="12"
+        :min="8" :max="24" :step="1"
         title="Розмір шрифту (pt)"
+        aria-label="Розмір шрифту таблиці"
+        @update:model-value="emit('update', { fontSize: $event ?? 12 })"
       />
       <span class="style-unit">pt</span>
       <span class="style-label">Інтервал:</span>
-      <input type="number" min="1" max="3" step="0.5" class="style-number"
-        :value="props.block.lineSpacing ?? 1.0"
-        @input="emit('update', { lineSpacing: parseFloat(($event.target as HTMLInputElement).value) || 1.0 })"
+      <NumberInput
+        :model-value="props.block.lineSpacing ?? 1.0"
+        :default-value="1.0"
+        :min="1" :max="3" :step="0.5"
         title="Міжрядковий інтервал"
+        aria-label="Міжрядковий інтервал таблиці"
+        @update:model-value="emit('update', { lineSpacing: $event ?? 1.0 })"
       />
       <button :class="['style-btn', { active: props.block.bold }]"
         @click="emit('update', { bold: !props.block.bold })" title="Жирний (комірки даних)" aria-label="Жирний (комірки даних)"><b>B</b></button>
@@ -179,30 +186,30 @@ function openMdWithCurrent() {
       <span>Без порожнього рядка знизу</span>
     </label>
 
-    <div class="space-after-row">
-      <span class="style-label">Рядків після підпису:</span>
-      <input
-        type="number"
-        class="style-number"
-        min="0" max="5" step="1"
-        :value="props.block.spaceAfterCaption ?? 1"
-        @input="emit('update', { spaceAfterCaption: parseInt(($event.target as HTMLInputElement).value) || 1 })"
-        title="Кількість порожніх рядків між підписом і таблицею"
-        aria-label="Рядків після підпису"
+    <div class="space-after-row" v-if="props.block.referenceText">
+      <span class="style-label">Рядків після посилання в тексті:</span>
+      <NumberInput
+        :model-value="props.block.spaceAfterReference ?? (props.block as { spaceAfterCaption?: number }).spaceAfterCaption ?? 1"
+        :default-value="1"
+        :min="0" :max="5" :step="1"
+        title="Кількість порожніх рядків між посиланням у тексті та таблицею"
+        aria-label="Рядків після посилання в тексті"
+        @update:model-value="emit('update', { spaceAfterReference: $event ?? 1 })"
       />
     </div>
 
     <div class="col-width-row">
       <span class="style-label">Ширина стовпців (%):</span>
       <div class="col-width-inputs">
-        <input
+        <NumberInput
           v-for="(_h, ci) in props.block.headers"
           :key="ci"
-          type="number" min="1" max="100" step="1"
-          class="style-number"
-          :value="colWidth(ci)"
-          @input="store.setTableColumnWidth(props.block.id, ci, parseInt(($event.target as HTMLInputElement).value) || 1)"
+          :model-value="colWidth(ci)"
+          :default-value="Math.round(100 / props.block.headers.length)"
+          :min="1" :max="100" :step="1"
           :title="`Стовпець ${ci + 1}`"
+          :aria-label="`Ширина стовпця ${ci + 1}`"
+          @update:model-value="store.setTableColumnWidth(props.block.id, ci, $event ?? 1)"
         />
         <button class="btn-small" @click="store.resetTableColumnWidths(props.block.id)" title="Рівні ширини" aria-label="Рівні ширини">↺</button>
       </div>

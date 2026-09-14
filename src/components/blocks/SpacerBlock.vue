@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { SpacerBlock } from '../../types/document'
+import NumberInput from './NumberInput.vue'
 
 const props = defineProps<{ block: SpacerBlock }>()
 const emit = defineEmits<{
@@ -24,10 +25,13 @@ const emit = defineEmits<{
     </div>
     <div class="block-style-row">
       <span class="style-label">Рядків:</span>
-      <input
-        type="number" min="1" max="20" step="1" class="style-number"
-        :value="props.block.lines ?? 1"
-        @input="emit('update', { lines: parseInt(($event.target as HTMLInputElement).value) || 1 })"
+      <NumberInput
+        :model-value="props.block.lines ?? 1"
+        :default-value="1"
+        :min="1" :max="20" :step="1"
+        title="Кількість порожніх рядків"
+        aria-label="Кількість порожніх рядків"
+        @update:model-value="emit('update', { lines: $event ?? 1 })"
       />
     </div>
   </div>

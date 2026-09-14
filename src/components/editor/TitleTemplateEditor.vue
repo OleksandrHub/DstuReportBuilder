@@ -12,6 +12,7 @@ import FormulaBlock from '../blocks/FormulaBlock.vue'
 import ListBlock from '../blocks/ListBlock.vue'
 import ColumnsBlock from '../blocks/ColumnsBlock.vue'
 import GroupBlockEditor from '../blocks/GroupBlock.vue'
+import NumberInput from '../blocks/NumberInput.vue'
 
 const store = useReportStore()
 const toast = useToast()
@@ -258,11 +259,14 @@ function onImportFile(e: Event) {
             <span class="block-type-label">⟷ Відступ</span>
             <div class="spacer-flex-ctrl">
               <label>Рядків:</label>
-              <input
-                type="number" min="1" max="50" step="1"
-                class="small-number-input"
-                :value="(block as TitleSpacerBlock).lines"
-                @input="store.updateTitleBlock(block.id, { lines: parseInt(($event.target as HTMLInputElement).value) || 1 })"
+              <NumberInput
+                input-class="small-number-input"
+                :model-value="(block as TitleSpacerBlock).lines"
+                :default-value="1"
+                :min="1" :max="50" :step="1"
+                title="Кількість рядків відступу"
+                aria-label="Кількість рядків відступу"
+                @update:model-value="store.updateTitleBlock(block.id, { lines: $event ?? 1 })"
               />
             </div>
             <div class="block-actions">
@@ -327,38 +331,52 @@ function onImportFile(e: Event) {
           <!-- Padding controls row -->
           <div class="line-padding-row">
             <label>Відступ зліва (см):</label>
-            <input
-              type="number" min="0" max="20" step="any"
-              class="small-number-input"
-              :value="(block as TitleLineBlock).paddingLeft"
-              @input="store.updateTitleBlock(block.id, { paddingLeft: parseFloat(($event.target as HTMLInputElement).value) || 0 })"
+            <NumberInput
+              input-class="small-number-input"
+              :model-value="(block as TitleLineBlock).paddingLeft"
+              :default-value="0"
+              :min="0" :max="20" :step="0.5"
+              title="Відступ зліва (см)"
+              aria-label="Відступ зліва"
+              @update:model-value="store.updateTitleBlock(block.id, { paddingLeft: $event ?? 0 })"
             />
             <label>Відступ справа (см):</label>
-            <input
-              type="number" min="0" max="20" step="any"
-              class="small-number-input"
-              :value="(block as TitleLineBlock).paddingRight"
-              @input="store.updateTitleBlock(block.id, { paddingRight: parseFloat(($event.target as HTMLInputElement).value) || 0 })"
+            <NumberInput
+              input-class="small-number-input"
+              :model-value="(block as TitleLineBlock).paddingRight"
+              :default-value="0"
+              :min="0" :max="20" :step="0.5"
+              title="Відступ справа (см)"
+              aria-label="Відступ справа"
+              @update:model-value="store.updateTitleBlock(block.id, { paddingRight: $event ?? 0 })"
             />
           </div>
 
           <!-- Font controls row -->
           <div class="line-padding-row">
             <label>Розмір (pt):</label>
-            <input
-              type="number" min="8" max="36" step="1"
-              class="small-number-input"
-              :value="(block as TitleLineBlock).fontSize ?? ''"
+            <NumberInput
+              input-class="small-number-input"
+              :model-value="(block as TitleLineBlock).fontSize"
+              :default-value="14"
+              :min="8" :max="36" :step="1"
+              :allow-empty="true"
               placeholder="авто"
-              @input="store.updateTitleBlock(block.id, { fontSize: parseInt(($event.target as HTMLInputElement).value) || undefined })"
+              title="Розмір шрифту (pt), порожньо = авто"
+              aria-label="Розмір шрифту рядка"
+              @update:model-value="store.updateTitleBlock(block.id, { fontSize: $event })"
             />
             <label>Інтервал:</label>
-            <input
-              type="number" min="1" max="3" step="0.5"
-              class="small-number-input"
-              :value="(block as TitleLineBlock).lineSpacing ?? ''"
+            <NumberInput
+              input-class="small-number-input"
+              :model-value="(block as TitleLineBlock).lineSpacing"
+              :default-value="1.5"
+              :min="1" :max="3" :step="0.5"
+              :allow-empty="true"
               placeholder="авто"
-              @input="store.updateTitleBlock(block.id, { lineSpacing: parseFloat(($event.target as HTMLInputElement).value) || undefined })"
+              title="Міжрядковий інтервал, порожньо = авто"
+              aria-label="Міжрядковий інтервал рядка"
+              @update:model-value="store.updateTitleBlock(block.id, { lineSpacing: $event })"
             />
             <label>Колір:</label>
             <input

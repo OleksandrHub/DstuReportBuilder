@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CodeBlock } from '../../types/document'
 import MarkerHint from './MarkerHint.vue'
+import NumberInput from './NumberInput.vue'
 
 const props = defineProps<{ block: CodeBlock; index: number }>()
 const emit = defineEmits<{
@@ -90,17 +91,23 @@ const languages = ['typescript', 'javascript', 'python', 'java', 'c', 'cpp', 'cs
         <option value="Calibri">Calibri</option>
       </select>
       <span class="style-label">Розмір:</span>
-      <input type="number" min="8" max="24" step="1" class="style-number"
-        :value="props.block.fontSize ?? 12"
-        @input="emit('update', { fontSize: parseInt(($event.target as HTMLInputElement).value) || 12 })"
+      <NumberInput
+        :model-value="props.block.fontSize ?? 12"
+        :default-value="12"
+        :min="8" :max="24" :step="1"
         title="Розмір шрифту (pt)"
+        aria-label="Розмір шрифту коду"
+        @update:model-value="emit('update', { fontSize: $event ?? 12 })"
       />
       <span class="style-unit">pt</span>
       <span class="style-label">Інтервал:</span>
-      <input type="number" min="1" max="3" step="0.5" class="style-number"
-        :value="props.block.lineSpacing ?? 1.0"
-        @input="emit('update', { lineSpacing: parseFloat(($event.target as HTMLInputElement).value) || 1.0 })"
+      <NumberInput
+        :model-value="props.block.lineSpacing ?? 1.0"
+        :default-value="1.0"
+        :min="1" :max="3" :step="0.5"
         title="Міжрядковий інтервал"
+        aria-label="Міжрядковий інтервал коду"
+        @update:model-value="emit('update', { lineSpacing: $event ?? 1.0 })"
       />
       <button :class="['style-btn', { active: props.block.bold }]"
         @click="emit('update', { bold: !props.block.bold })" title="Жирний" aria-label="Жирний"><b>B</b></button>
@@ -115,16 +122,15 @@ const languages = ['typescript', 'javascript', 'python', 'java', 'c', 'cpp', 'cs
         @change="emit('update', { noTrailingSpace: ($event.target as HTMLInputElement).checked })" />
       <span>Без порожнього рядка знизу</span>
     </label>
-    <div class="space-after-row">
-      <span class="style-label">Рядків після підпису:</span>
-      <input
-        type="number"
-        class="style-number"
-        min="0" max="5" step="1"
-        :value="props.block.spaceAfterCaption ?? 1"
-        @input="emit('update', { spaceAfterCaption: parseInt(($event.target as HTMLInputElement).value) || 1 })"
-        title="Кількість порожніх рядків між підписом і кодом"
-        aria-label="Рядків після підпису"
+    <div class="space-after-row" v-if="props.block.referenceText">
+      <span class="style-label">Рядків після посилання в тексті:</span>
+      <NumberInput
+        :model-value="props.block.spaceAfterReference ?? (props.block as { spaceAfterCaption?: number }).spaceAfterCaption ?? 1"
+        :default-value="1"
+        :min="0" :max="5" :step="1"
+        title="Кількість порожніх рядків між посиланням у тексті та лістингом"
+        aria-label="Рядків після посилання в тексті"
+        @update:model-value="emit('update', { spaceAfterReference: $event ?? 1 })"
       />
     </div>
 
