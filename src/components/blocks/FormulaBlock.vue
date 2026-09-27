@@ -4,6 +4,7 @@ import katex from 'katex'
 import 'katex/dist/katex.min.css'
 import type { FormulaBlock } from '../../types/document'
 import MarkerHint from './MarkerHint.vue'
+import RefLabelField from './RefLabelField.vue'
 import BlockStyleRow from './BlockStyleRow.vue'
 import NumberInput from './NumberInput.vue'
 
@@ -96,6 +97,8 @@ watch(() => props.block.latex, renderPreview)
         @update:model-value="emit('update', { spaceAfterReference: $event ?? 1 })"
       />
     </div>
+
+    <RefLabelField :label="props.block.label" @update="emit('update', { label: $event })" />
 
     <label class="ref-toggle">
       <input

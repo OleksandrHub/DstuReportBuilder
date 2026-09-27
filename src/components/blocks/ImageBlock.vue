@@ -2,6 +2,7 @@
 import type { ImageBlock } from '../../types/document'
 import { ref, watch, computed } from 'vue'
 import MarkerHint from './MarkerHint.vue'
+import RefLabelField from './RefLabelField.vue'
 import BlockStyleRow from './BlockStyleRow.vue'
 import NumberInput from './NumberInput.vue'
 
@@ -158,6 +159,8 @@ async function onFileChange(e: Event) {
         <button @click="emit('remove')" class="btn-danger" title="Видалити" aria-label="Видалити">✕</button>
       </div>
     </div>
+
+    <RefLabelField :label="props.block.label" @update="emit('update', { label: $event })" />
 
     <label class="ref-toggle">
       <input

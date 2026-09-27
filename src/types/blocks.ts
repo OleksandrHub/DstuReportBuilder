@@ -87,6 +87,7 @@ export interface CodeBlock {
   caption: string
   code: string
   language: string
+  label?: string // cross-reference key: {ref:label} in text → this object's number
   referenceText?: string
   inlineReference?: boolean // append referenceText to the previous paragraph
   fontSize?: number     // default 12
@@ -105,6 +106,7 @@ export interface ImageBlock {
   type: 'image'
   src: string
   caption: string
+  label?: string // cross-reference key: {ref:label} in text → this object's number
   referenceText?: string
   inlineReference?: boolean
   noTrailingSpace?: boolean
@@ -144,6 +146,7 @@ export interface TableBlock {
   caption: string
   headers: string[]
   rows: TableRow[]
+  label?: string // cross-reference key: {ref:label} in text → this object's number
   referenceText?: string
   inlineReference?: boolean
   fontSize?: number     // default 12
@@ -165,6 +168,7 @@ export interface FormulaBlock {
   type: 'formula'
   latex: string
   caption?: string
+  label?: string // cross-reference key: {ref:label} in text → this object's number
   referenceText?: string
   inlineReference?: boolean
   numbered?: boolean        // equation number on the right (default true)

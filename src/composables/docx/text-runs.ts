@@ -48,6 +48,23 @@ const MARKERS: Array<{ tok: string; key: BoolStyleKey }> = [
   { tok: '`', key: 'mono' },
 ]
 
+// Document-wide knowledge needed by some inline tokens. buildDocxBlob sets it
+// for the duration of one (synchronous) build and clears it afterwards.
+export interface InlineContext {
+  refs: Map<string, string> // refKey(label) → number of the labelled object
+}
+let context: InlineContext | null = null
+export function setInlineContext(c: InlineContext | null): void {
+  context = c
+}
+
+// Labels are matched case-insensitively, ignoring surrounding spaces.
+export function refKey(label: string): string {
+  return label.trim().toLowerCase()
+}
+
+// Cross-reference: {ref:label} → the number of the object with that label
+// ("??" when there is no such label).
 // Inline color markers: {#RRGGBB|text colour} and {!#RRGGBB|background fill};
 // 3-digit hex works too, and {!|text} uses the default yellow fill.
 // Escape any marker char with a backslash: \*  \_  \`  \=  \{  \}  \\
@@ -79,6 +96,13 @@ export function inlineRuns(text: string, cfg: FontConfig, baseBold = false): Tex
     if (active.mono) {
       if (ch === '`') { flush(); active.mono = false; i += 1; continue }
       buf += ch; i += 1; continue
+    }
+
+    const ref = /^\{ref:([^}]*)\}/.exec(text.slice(i))
+    if (ref) {
+      buf += context?.refs.get(refKey(ref[1]!)) ?? '??'
+      i += ref[0].length
+      continue
     }
 
     // Open group: {#RGB| (text colour) or {!#RGB| / {!| (background fill)

@@ -247,7 +247,7 @@ export function buildBlock(
   }
 
   if (block.type === 'formula') {
-    const num = counters.next('formula')
+    const num = counters.next('formula', block.label)
     const result: BodyEl[] = []
 
     // Caption / reference text formatting overrides (the formula image is
@@ -333,7 +333,7 @@ export function buildBlock(
   }
 
   if (block.type === 'code') {
-    const num = counters.next('code')
+    const num = counters.next('code', block.label)
     const result: BodyEl[] = []
     const codeSize = ptToHalfPt(block.fontSize ?? 12)
     const codeSpacing = block.lineSpacing ?? 1.0
@@ -378,7 +378,7 @@ export function buildBlock(
   }
 
   if (block.type === 'image') {
-    const num = counters.next('image')
+    const num = counters.next('image', block.label)
     const result: BodyEl[] = []
 
     const refText = resolveReference(block.referenceText, s.imagePrefix, num)
@@ -444,7 +444,7 @@ export function buildBlock(
   }
 
   if (block.type === 'table') {
-    const num = counters.next('table')
+    const num = counters.next('table', block.label)
     const result: BodyEl[] = []
     const tblSize = ptToHalfPt(block.fontSize ?? 12)
     const tblSpacing = block.lineSpacing ?? 1.0

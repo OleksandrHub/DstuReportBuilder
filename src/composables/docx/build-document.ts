@@ -10,9 +10,9 @@ import type { ReportDocument, ReportBlock } from '../../types/document'
 import { renderFormulaPng, type FormulaImage } from '../useFormulaImage'
 import { cmToTwip, ptToHalfPt } from './units'
 import type { FontConfig } from './text-runs'
-import { inlineRuns } from './text-runs'
+import { inlineRuns, setInlineContext, type InlineContext } from './text-runs'
 import { bodyParagraph } from './paragraphs'
-import { makeCounters } from './counters'
+import { makeCounters, type Counters } from './counters'
 import { buildHeader, buildFooter } from './header-footer'
 import { formulaCacheKey, getCachedFormula, setCachedFormula } from './formula-cache'
 import type { BodyEl } from './blocks'
@@ -28,8 +28,6 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
     lineSpacing: s.lineSpacing,
     paragraphIndent: s.paragraphIndent,
   }
-
-  const counters = makeCounters(s.numbering)
 
   // Pre-render all formulas to PNG (async). KaTeX→PNG works everywhere
   // (Word, OnlyOffice, preview), unlike OMML which OnlyOffice can't show.
@@ -55,38 +53,57 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
     if (tb.type === 'titleContent') await renderFormula(tb.block)
   }
 
-  const titleChildren = buildTitlePage(doc, cfg, counters, previewMode, formulaImages)
-  const bodyChildren: BodyEl[] = []
+  const render = (counters: Counters) => {
+    const titleChildren = buildTitlePage(doc, cfg, counters, previewMode, formulaImages)
+    const bodyChildren: BodyEl[] = []
 
-  for (const block of doc.blocks) {
-    // Inline text block: append to the previous paragraph (no new line).
-    if (block.type === 'text') {
-      const prev = bodyChildren[bodyChildren.length - 1]
-      if (prev instanceof Paragraph) {
-        for (const run of inlineRuns(block.text, cfg)) prev.addChildElement(run)
-      } else {
-        bodyChildren.push(bodyParagraph(inlineRuns(block.text, cfg), cfg))
+    for (const block of doc.blocks) {
+      // Inline text block: append to the previous paragraph (no new line).
+      if (block.type === 'text') {
+        const prev = bodyChildren[bodyChildren.length - 1]
+        if (prev instanceof Paragraph) {
+          for (const run of inlineRuns(block.text, cfg)) prev.addChildElement(run)
+        } else {
+          bodyChildren.push(bodyParagraph(inlineRuns(block.text, cfg), cfg))
+        }
+        continue
       }
-      continue
-    }
 
-    const out: { inlineRef?: string } = {}
-    const elements = buildBlock(block, doc, cfg, counters, previewMode, out, formulaImages)
+      const out: { inlineRef?: string } = {}
+      const elements = buildBlock(block, doc, cfg, counters, previewMode, out, formulaImages)
 
-    // Inline reference: append the sentence to the previous paragraph instead of
-    // emitting it on its own line. Falls back to a normal line if there's no
-    // previous paragraph to attach to.
-    if (out.inlineRef) {
-      const prev = bodyChildren[bodyChildren.length - 1]
-      if (prev instanceof Paragraph) {
-        for (const run of inlineRuns(` ${out.inlineRef}`, cfg)) prev.addChildElement(run)
-      } else {
-        bodyChildren.push(bodyParagraph(inlineRuns(out.inlineRef, cfg), cfg))
+      // Inline reference: append the sentence to the previous paragraph instead of
+      // emitting it on its own line. Falls back to a normal line if there's no
+      // previous paragraph to attach to.
+      if (out.inlineRef) {
+        const prev = bodyChildren[bodyChildren.length - 1]
+        if (prev instanceof Paragraph) {
+          for (const run of inlineRuns(` ${out.inlineRef}`, cfg)) prev.addChildElement(run)
+        } else {
+          bodyChildren.push(bodyParagraph(inlineRuns(out.inlineRef, cfg), cfg))
+        }
       }
-    }
 
-    bodyChildren.push(...elements)
+      bodyChildren.push(...elements)
+    }
+    return { titleChildren, bodyChildren }
   }
+
+  // Two passes: the first one only numbers the objects (figures, tables, …) so
+  // that {ref:label} in text can resolve to numbers of objects further below;
+  // the second pass renders the document with every reference known.
+  const ctx: InlineContext = { refs: new Map() }
+  let rendered: ReturnType<typeof render>
+  try {
+    setInlineContext(ctx)
+    const numbering = makeCounters(s.numbering)
+    render(numbering)
+    ctx.refs = numbering.labels
+    rendered = render(makeCounters(s.numbering))
+  } finally {
+    setInlineContext(null)
+  }
+  const { titleChildren, bodyChildren } = rendered
 
   const startPage = s.pageNumberStart ?? 1
   const hasTitle = titleChildren.length > 0

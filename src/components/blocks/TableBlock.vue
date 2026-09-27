@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { TableBlock } from '../../types/document'
 import { useReportStore } from '../../stores/report'
 import MarkerHint from './MarkerHint.vue'
+import RefLabelField from './RefLabelField.vue'
 import NumberInput from './NumberInput.vue'
 
 const props = defineProps<{ block: TableBlock; index: number }>()
@@ -84,6 +85,8 @@ function openMdWithCurrent() {
         <button @click="emit('remove')" class="btn-danger" title="Видалити" aria-label="Видалити">✕</button>
       </div>
     </div>
+
+    <RefLabelField :label="props.block.label" @update="emit('update', { label: $event })" />
 
     <label class="ref-toggle">
       <input
