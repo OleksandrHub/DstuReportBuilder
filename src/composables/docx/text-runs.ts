@@ -1,4 +1,4 @@
-import { ShadingType, TextRun } from 'docx'
+import { AlignmentType, FootnoteReferenceRun, Paragraph, ShadingType, TextRun } from 'docx'
 import { addNbsp } from './nbsp'
 
 export interface FontConfig {
@@ -54,6 +54,7 @@ const MARKERS: Array<{ tok: string; key: BoolStyleKey }> = [
 export interface InlineContext {
   refs: Map<string, string> // refKey(label) → number of the labelled object
   nbsp: boolean             // settings.autoNbsp
+  footnotes: Record<number, { children: Paragraph[] }> // collected ^[…] footnotes, by id
   cite: {
     keys: Map<string, string>    // refKey(entry key) or "N" (list position) → entry id
     numbers: Map<string, number> // entry id → number in the sources list
@@ -107,10 +108,49 @@ export function refKey(label: string): string {
 // ("??" when there is no such label). Citation: {cite:key} → [N], see citation().
 // Inline color markers: {#RRGGBB|text colour} and {!#RRGGBB|background fill};
 // 3-digit hex works too, and {!|text} uses the default yellow fill.
-// Escape any marker char with a backslash: \*  \_  \`  \=  \{  \}  \\
-export function inlineRuns(text: string, cfg: FontConfig, baseBold = false): TextRun[] {
+// Escape any marker char with a backslash: \*  \_  \`  \=  \^  \{  \}  \\
+export type InlineRun = TextRun | FootnoteReferenceRun
+
+// Footnote text size: 10 pt, independent of the body size.
+const FOOTNOTE_SIZE = 20
+let inFootnote = false
+
+// ^[text] → a footnote at the bottom of the page. The text may use every
+// inline marker (but not another footnote). Returns the reference mark.
+function footnote(content: string, cfg: FontConfig): InlineRun {
+  const notes = context?.footnotes
+  if (!notes || inFootnote) return styledRun(content, cfg, {})
+  const id = Object.keys(notes).length + 1
+  inFootnote = true
+  try {
+    notes[id] = {
+      children: [new Paragraph({
+        children: inlineRuns(content.trim(), { ...cfg, size: FOOTNOTE_SIZE }),
+        alignment: AlignmentType.JUSTIFIED,
+      })],
+    }
+  } finally {
+    inFootnote = false
+  }
+  return new FootnoteReferenceRun(id)
+}
+
+// Index just past the "]" that closes a "^[" opened at `start` (nested
+// brackets and backslash escapes allowed), or -1 if it is never closed.
+function footnoteEnd(text: string, start: number): number {
+  let depth = 0
+  for (let j = start; j < text.length; j++) {
+    const c = text[j]
+    if (c === '\\') { j++; continue }
+    if (c === '[') depth++
+    else if (c === ']' && --depth === 0) return j + 1
+  }
+  return -1
+}
+
+export function inlineRuns(text: string, cfg: FontConfig, baseBold = false): InlineRun[] {
   if (context?.nbsp) text = addNbsp(text)
-  const runs: TextRun[] = []
+  const runs: InlineRun[] = []
   const active: RunStyle = { bold: baseBold }
   // {..|..} groups form a stack so nested groups restore the outer value on close.
   const groupStack: Array<{ key: 'color' | 'highlight'; prev: string | undefined }> = []
@@ -145,6 +185,16 @@ export function inlineRuns(text: string, cfg: FontConfig, baseBold = false): Tex
       i += ref[0].length
       continue
     }
+    if (text.startsWith('^[', i)) {
+      const end = footnoteEnd(text, i + 1)
+      if (end !== -1) {
+        flush()
+        runs.push(footnote(text.slice(i + 2, end - 1), cfg))
+        i = end
+        continue
+      }
+    }
+
     const cite = /^\{cite:([^}|]*)(?:\|([^}]*))?\}/.exec(text.slice(i))
     if (cite) {
       buf += citation(cite[1]!, cite[2])

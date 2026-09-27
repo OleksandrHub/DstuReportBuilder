@@ -31,7 +31,7 @@ function toLower() {
 }
 
 function escapeMarkers() {
-  outputText.value = inputText.value.replace(/([*_`=\\{}])/g, '\\$1')
+  outputText.value = inputText.value.replace(/([*_`=^\\{}])/g, '\\$1')
 }
 
 async function copyOutput() {
@@ -96,7 +96,7 @@ async function copyOutput() {
       <div class="tool-actions">
         <button class="btn-sm" @click="toUpper">Усі великі</button>
         <button class="btn-sm" @click="toLower">Усі малі</button>
-        <button class="btn-sm" @click="escapeMarkers">Екранувати * _ = { }</button>
+        <button class="btn-sm" @click="escapeMarkers">Екранувати * _ = ^ { }</button>
       </div>
       <div class="field-group">
         <label>Результат</label>

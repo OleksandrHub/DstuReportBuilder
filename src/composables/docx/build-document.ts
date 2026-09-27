@@ -101,6 +101,7 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
   const ctx: InlineContext = {
     refs: new Map(),
     nbsp: s.autoNbsp !== false,
+    footnotes: {},
     cite: {
       keys: new Map(),
       numbers: new Map(entries.map((e, i) => [e.id, i + 1])),
@@ -123,6 +124,7 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
       ctx.cite.numbers = new Map(ordered.map((id, i) => [id, i + 1]))
     }
     ctx.cite.cited = []
+    ctx.footnotes = {}
     rendered = render(makeCounters(s.numbering))
   } finally {
     setInlineContext(null)
@@ -174,6 +176,7 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
   // Title and body share one section, separated by a plain (visible) page
   // break. The title page gets its own header/footer via "different first page".
   const docxDoc = new Document({
+    footnotes: ctx.footnotes,
     // Ask the editor to recompute fields (TOC, page numbers) when the file opens.
     features: { updateFields: true },
     styles: {

@@ -1,10 +1,10 @@
 import { Paragraph, TextRun, AlignmentType } from 'docx'
-import type { FontConfig } from './text-runs'
+import type { FontConfig, InlineRun } from './text-runs'
 import { inlineRuns } from './text-runs'
 import { cmToTwip } from './units'
 
 export function bodyParagraph(
-  runs: TextRun[],
+  runs: InlineRun[],
   cfg: FontConfig,
   noIndent = false,
   alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.JUSTIFIED
