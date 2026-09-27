@@ -517,7 +517,8 @@ export const useReportStore = defineStore('report', () => {
 
   // Apply a string transform to every user-editable text field across all blocks.
   // Returns the number of fields changed.
-  function transformAllText(fn: (s: string) => string): number {
+  // includeCode: false leaves code block bodies untouched (typography fixes).
+  function transformAllText(fn: (s: string) => string, includeCode = true): number {
     const doc = activeDocument.value
     if (!doc) return 0
     let changed = 0
@@ -544,7 +545,7 @@ export const useReportStore = defineStore('report', () => {
         applyItems(b.items)
       } else if (b.type === 'code') {
         b.caption = apply(b.caption)!
-        b.code = apply(b.code)!
+        if (includeCode) b.code = apply(b.code)!
         b.referenceText = apply(b.referenceText)
       } else if (b.type === 'image') {
         b.caption = apply(b.caption)!
@@ -1403,6 +1404,7 @@ export const useReportStore = defineStore('report', () => {
     inheritGlobalStylesEverywhere,
     addBlock,
     addIntroBlocks,
+    transformAllText,
     replaceAllText,
     emDashToEnDash,
     addSource,

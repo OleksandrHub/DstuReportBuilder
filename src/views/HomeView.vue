@@ -12,6 +12,7 @@ import { downloadJsonFile } from '../stores/document-io'
 import BlockRenderer from '../components/blocks/BlockRenderer.vue'
 import MoveToMenu from '../components/blocks/MoveToMenu.vue'
 import TextToolsBar from '../components/blocks/TextToolsBar.vue'
+import FormatCheck from '../components/FormatCheck.vue'
 import BlockInserter from '../components/blocks/BlockInserter.vue'
 import TitlePageEditor from '../components/editor/TitlePageEditor.vue'
 import TitleTemplateEditor from '../components/editor/TitleTemplateEditor.vue'
@@ -116,6 +117,18 @@ const filteredBlocks = computed(() => {
   const blocks = doc.value?.blocks ?? []
   return blocks.filter(matchesBlock)
 })
+
+// Jump from the formatting check to a (top-level) block: show it unfiltered,
+// unfolded, and scroll it into view.
+async function goToBlock(id: string) {
+  blockSearch.value = ''
+  leftTab.value = 'blocks'
+  collapsedBlocks.value[id] = false
+  const b = doc.value?.blocks.find(x => x.id === id)
+  if (b?.type === 'group' && b.collapsed) store.updateBlock(id, { collapsed: false })
+  await nextTick()
+  document.getElementById(`block-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 function toggleBlockCollapse(id: string) {
   collapsedBlocks.value[id] = !collapsedBlocks.value[id]
@@ -356,6 +369,7 @@ watch(mobilePane, (pane) => {
                    it would duplicate the group's title bar). -->
               <BlockRenderer
                 v-if="block.type === 'group'"
+                :id="`block-${block.id}`"
                 :block="block"
                 @update="onUpdateBlock(block.id, $event)"
                 @remove="store.removeBlock(block.id)"
@@ -363,7 +377,7 @@ watch(mobilePane, (pane) => {
                 @move-up="store.moveBlock(block.id, 'up')"
                 @move-down="store.moveBlock(block.id, 'down')"
               />
-              <div v-else class="content-block-wrap" :class="{ collapsed: !!collapsedBlocks[block.id] }">
+              <div v-else :id="`block-${block.id}`" class="content-block-wrap" :class="{ collapsed: !!collapsedBlocks[block.id] }">
                 <div class="collapse-head">
                   <input
                     type="checkbox"
@@ -438,6 +452,7 @@ watch(mobilePane, (pane) => {
           </div>
         </div>
         <div v-else-if="leftTab === 'tools'" class="tools-tab">
+          <FormatCheck @go="goToBlock" />
           <TextToolsBar />
         </div>
         </template>
