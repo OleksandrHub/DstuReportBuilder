@@ -10,7 +10,7 @@ import type { ReportDocument, ReportBlock } from '../../types/document'
 import { renderFormulaPng, type FormulaImage } from '../useFormulaImage'
 import { cmToTwip, ptToHalfPt } from './units'
 import type { FontConfig } from './text-runs'
-import { inlineRuns, setInlineContext, type InlineContext } from './text-runs'
+import { inlineRuns, refKey, setInlineContext, type InlineContext } from './text-runs'
 import { bodyParagraph } from './paragraphs'
 import { makeCounters, type Counters } from './counters'
 import { buildHeader, buildFooter } from './header-footer'
@@ -18,6 +18,7 @@ import { formulaCacheKey, getCachedFormula, setCachedFormula } from './formula-c
 import type { BodyEl } from './blocks'
 import { buildBlock } from './blocks'
 import { buildTitlePage } from './title-page'
+import { flattenBodyBlocks } from '../../stores/block-utils'
 
 export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Promise<Blob> {
   const previewMode = forPreview
@@ -92,13 +93,35 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
   // Two passes: the first one only numbers the objects (figures, tables, …) so
   // that {ref:label} in text can resolve to numbers of objects further below;
   // the second pass renders the document with every reference known.
-  const ctx: InlineContext = { refs: new Map() }
+  // Citations point into the first sources block; the first pass also records
+  // the order in which entries are first cited.
+  const sources = flattenBodyBlocks(doc.blocks)
+    .find((b): b is Extract<ReportBlock, { type: 'sources' }> => b.type === 'sources')
+  const entries = sources?.entries ?? []
+  const ctx: InlineContext = {
+    refs: new Map(),
+    cite: {
+      keys: new Map(),
+      numbers: new Map(entries.map((e, i) => [e.id, i + 1])),
+      cited: [],
+    },
+  }
+  entries.forEach((e, i) => {
+    ctx.cite.keys.set(String(i + 1), e.id)
+    if (e.key?.trim()) ctx.cite.keys.set(refKey(e.key), e.id)
+  })
   let rendered: ReturnType<typeof render>
   try {
     setInlineContext(ctx)
     const numbering = makeCounters(s.numbering)
     render(numbering)
     ctx.refs = numbering.labels
+    if (sources?.order === 'citation') {
+      const cited = ctx.cite.cited
+      const ordered = [...cited, ...entries.map(e => e.id).filter(id => !cited.includes(id))]
+      ctx.cite.numbers = new Map(ordered.map((id, i) => [id, i + 1]))
+    }
+    ctx.cite.cited = []
     rendered = render(makeCounters(s.numbering))
   } finally {
     setInlineContext(null)

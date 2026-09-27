@@ -29,3 +29,12 @@ export function findListItem(items: ListItem[], itemId: string): { item: ListIte
   }
   return null
 }
+
+// Body blocks in document order with groups flattened (groups are transparent).
+export function flattenBodyBlocks(list: ReportBlock[], out: ReportBlock[] = []): ReportBlock[] {
+  for (const b of list) {
+    if (b.type === 'group') flattenBodyBlocks(b.blocks, out)
+    else out.push(b)
+  }
+  return out
+}

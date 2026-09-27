@@ -190,6 +190,9 @@ export interface SourcesBlock {
   type: 'sources'
   title?: string // heading above the list (default "Список використаних джерел")
   entries: SourceEntry[]
+  // 'list' (default): numbered as entered; 'citation': in order of the first
+  // {cite:…} in the text (uncited entries go last, in list order).
+  order?: 'list' | 'citation'
   bold?: boolean
   align?: 'left' | 'center' | 'right' | 'justify'
   fontSize?: number

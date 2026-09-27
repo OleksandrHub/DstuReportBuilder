@@ -52,10 +52,48 @@ const MARKERS: Array<{ tok: string; key: BoolStyleKey }> = [
 // for the duration of one (synchronous) build and clears it afterwards.
 export interface InlineContext {
   refs: Map<string, string> // refKey(label) → number of the labelled object
+  cite: {
+    keys: Map<string, string>    // refKey(entry key) or "N" (list position) → entry id
+    numbers: Map<string, number> // entry id → number in the sources list
+    cited: string[]              // entry ids in order of first citation (filled while rendering)
+  }
 }
 let context: InlineContext | null = null
 export function setInlineContext(c: InlineContext | null): void {
   context = c
+}
+export function getInlineContext(): InlineContext | null {
+  return context
+}
+
+// {cite:a,b|с. 25} → "[1, 3, с. 25]"; runs of 3+ consecutive numbers collapse
+// to a range ("[2–4]"); unknown keys show as "?".
+function citation(keys: string, extra: string | undefined): string {
+  const c = context?.cite
+  const nums: number[] = []
+  let unknown = false
+  for (const k of keys.split(',').map(refKey).filter(Boolean)) {
+    const id = c?.keys.get(k)
+    const n = id ? c!.numbers.get(id) : undefined
+    if (id && n) {
+      if (!c!.cited.includes(id)) c!.cited.push(id)
+      if (!nums.includes(n)) nums.push(n)
+    } else {
+      unknown = true
+    }
+  }
+  nums.sort((a, b) => a - b)
+  const parts: string[] = []
+  for (let i = 0; i < nums.length;) {
+    let j = i
+    while (j + 1 < nums.length && nums[j + 1] === nums[j]! + 1) j++
+    if (j - i >= 2) parts.push(`${nums[i]}–${nums[j]}`)
+    else for (let k = i; k <= j; k++) parts.push(String(nums[k]))
+    i = j + 1
+  }
+  if (unknown) parts.push('?')
+  if (extra?.trim()) parts.push(extra.trim())
+  return `[${parts.join(', ')}]`
 }
 
 // Labels are matched case-insensitively, ignoring surrounding spaces.
@@ -64,7 +102,7 @@ export function refKey(label: string): string {
 }
 
 // Cross-reference: {ref:label} → the number of the object with that label
-// ("??" when there is no such label).
+// ("??" when there is no such label). Citation: {cite:key} → [N], see citation().
 // Inline color markers: {#RRGGBB|text colour} and {!#RRGGBB|background fill};
 // 3-digit hex works too, and {!|text} uses the default yellow fill.
 // Escape any marker char with a backslash: \*  \_  \`  \=  \{  \}  \\
@@ -102,6 +140,12 @@ export function inlineRuns(text: string, cfg: FontConfig, baseBold = false): Tex
     if (ref) {
       buf += context?.refs.get(refKey(ref[1]!)) ?? '??'
       i += ref[0].length
+      continue
+    }
+    const cite = /^\{cite:([^}|]*)(?:\|([^}]*))?\}/.exec(text.slice(i))
+    if (cite) {
+      buf += citation(cite[1]!, cite[2])
+      i += cite[0].length
       continue
     }
 

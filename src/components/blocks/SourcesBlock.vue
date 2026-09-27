@@ -46,6 +46,22 @@ function upd(id: string, data: Partial<SourceEntry>) {
       />
     </div>
 
+    <div class="block-field-row">
+      <label>Нумерація:</label>
+      <select
+        class="style-select"
+        :value="props.block.order ?? 'list'"
+        @change="emit('update', { order: ($event.target as HTMLSelectElement).value as 'list' | 'citation' })"
+      >
+        <option value="list">як у списку нижче</option>
+        <option value="citation">за першим посиланням у тексті (ДСТУ)</option>
+      </select>
+    </div>
+    <p class="block-hint">
+      Посилання в тексті: <code>{cite:ключ}</code> → [1], кілька: <code>{cite:a,b}</code> → [1, 2],
+      зі сторінкою: <code>{cite:ключ|с. 25}</code> → [1, с. 25]. Замість ключа можна номер у списку: <code>{cite:3}</code>.
+    </p>
+
     <BlockStyleRow :block="props.block" default-align="justify" :show-indent="false" @update="emit('update', $event)" />
 
     <div v-for="(e, i) in props.block.entries" :key="e.id" class="source-entry">
@@ -54,6 +70,14 @@ function upd(id: string, data: Partial<SourceEntry>) {
         <select class="style-select" :value="e.type" @change="upd(e.id, { type: ($event.target as HTMLSelectElement).value as SourceType })">
           <option v-for="(lbl, k) in typeLabels" :key="k" :value="k">{{ lbl }}</option>
         </select>
+        <input
+          class="block-input source-key"
+          :value="e.key"
+          @input="upd(e.id, { key: ($event.target as HTMLInputElement).value })"
+          placeholder="ключ, напр. knuth"
+          title="Ключ для посилання {cite:ключ}"
+          aria-label="Ключ для посилання"
+        />
         <button class="btn-icon" @click="store.moveSource(props.block.id, e.id, 'up')" title="Вгору" aria-label="Вгору">↑</button>
         <button class="btn-icon" @click="store.moveSource(props.block.id, e.id, 'down')" title="Вниз" aria-label="Вниз">↓</button>
         <button class="btn-icon btn-danger" @click="store.removeSource(props.block.id, e.id)" :disabled="props.block.entries.length <= 1" title="Видалити джерело" aria-label="Видалити джерело">✕</button>

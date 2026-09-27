@@ -17,7 +17,7 @@ import type { ReportDocument, ReportBlock, ListItem, TableRow as DocTableRow } f
 import { formatSourceDSTU, resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
 import type { FormulaImage } from '../useFormulaImage'
 import { cmToTwip, ptToHalfPt } from './units'
-import { baseRun, inlineRuns } from './text-runs'
+import { baseRun, getInlineContext, inlineRuns } from './text-runs'
 import { bodyParagraph, emptyParagraph, emptyParagraphs, captionParagraph, ALIGN4_MAP } from './paragraphs'
 import type { Counters } from './counters'
 import { resolveReference, tocBookmarkId } from './counters'
@@ -209,7 +209,13 @@ export function buildBlock(
     }))
     // Empty line between the heading and the first source.
     result.push(emptyParagraph(srcCfg))
-    block.entries.forEach((e, i) => {
+    // Entries follow their citation numbers (only differs from the list order
+    // when the block is numbered by first citation).
+    const nums = getInlineContext()?.cite.numbers
+    const ordered = nums
+      ? [...block.entries].sort((a, b) => (nums.get(a.id) ?? 0) - (nums.get(b.id) ?? 0))
+      : block.entries
+    ordered.forEach((e, i) => {
       const text = formatSourceDSTU(e)
       result.push(new Paragraph({
         children: [baseRun(`${i + 1}. ${text}`, srcCfg, entryBold)],

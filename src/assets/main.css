@@ -1670,6 +1670,7 @@ h3.preview-heading { font-size: 1em; }
 }
 .source-entry-head { display: flex; align-items: center; gap: 6px; }
 .source-num { font-weight: 700; color: var(--color-accent); }
+.source-key { flex: 1; min-width: 0; }
 .source-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .source-preview {
   background: #fff; color: #000; padding: 6px 8px; border-radius: 4px;

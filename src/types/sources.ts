@@ -3,6 +3,7 @@ export type SourceType = 'book' | 'article' | 'electronic'
 export interface SourceEntry {
   id: string
   type: SourceType
+  key?: string         // citation key: {cite:key} in text → [N]
   authors: string      // comma-separated: "Прізвище І. П., Інший А. Б."
   title: string        // main title
   subtitle?: string    // subtitle (after " : ")

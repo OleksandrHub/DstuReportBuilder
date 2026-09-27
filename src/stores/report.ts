@@ -32,7 +32,7 @@ import {
   type PersistedState,
 } from './storage'
 import { migrateDocuments } from './migrations'
-import { cloneBlockWithNewIds, findListItem } from './block-utils'
+import { cloneBlockWithNewIds, findListItem, flattenBodyBlocks } from './block-utils'
 import {
   buildBackupPayload,
   buildSingleDocumentPayload,
@@ -1079,14 +1079,6 @@ export const useReportStore = defineStore('report', () => {
 
   // Flatten top-level blocks, descending into (transparent) groups.
   // Used by numbering, find/replace and anywhere document order matters.
-  function flattenBodyBlocks(list: ReportBlock[], out: ReportBlock[] = []): ReportBlock[] {
-    for (const b of list) {
-      if (b.type === 'group') flattenBodyBlocks(b.blocks, out)
-      else out.push(b)
-    }
-    return out
-  }
-
   function getBlockIndex(blockId: string, type: ReportBlock['type']): number {
     const doc = activeDocument.value
     if (!doc) return 0
