@@ -23,6 +23,7 @@ import {
   DEFAULT_BODY_TEXT,
 } from '../types/defaults'
 import { parseMarkdownTable, parseMarkdownList } from '../types/markdown'
+import { DEFAULT_ABBREVIATIONS_TITLE } from '../types/blocks'
 import { generateId, emptySourceEntry, deepCloneTitleBlocks, createDocument } from './factories'
 import {
   loadState,
@@ -438,6 +439,13 @@ export const useReportStore = defineStore('report', () => {
       block = { id: generateId(), type: 'pageBreak' }
     } else if (type === 'spacer') {
       block = { id: generateId(), type: 'spacer', lines: 1 }
+    } else if (type === 'abbreviations') {
+      block = {
+        id: generateId(),
+        type: 'abbreviations',
+        title: DEFAULT_ABBREVIATIONS_TITLE,
+        entries: [{ id: generateId(), term: '', definition: '' }],
+      }
     } else if (type === 'appendix') {
       block = { id: generateId(), type: 'appendix', title: '' }
     } else if (type === 'toc') {
@@ -549,6 +557,12 @@ export const useReportStore = defineStore('report', () => {
       } else if (b.type === 'formula') {
         if (b.caption !== undefined) b.caption = apply(b.caption)
         b.referenceText = apply(b.referenceText)
+      } else if (b.type === 'abbreviations') {
+        if (b.title !== undefined) b.title = apply(b.title)
+        b.entries.forEach(e => {
+          e.term = apply(e.term)!
+          e.definition = apply(e.definition)!
+        })
       } else if (b.type === 'appendix') {
         b.title = apply(b.title)!
       } else if (b.type === 'toc') {

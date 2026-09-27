@@ -223,6 +223,29 @@ export interface GroupBlock {
   blocks: ReportBlock[]
 }
 
+export interface AbbreviationEntry {
+  id: string
+  term: string       // "ДСТУ", "v"
+  definition: string // "державний стандарт України", "швидкість, м/с"
+}
+
+// "Перелік умовних позначень…": terms on the left, "– definition" on the right.
+export interface AbbreviationsBlock {
+  id: string
+  type: 'abbreviations'
+  title?: string
+  entries: AbbreviationEntry[]
+  sorted?: boolean // alphabetical order (default true)
+  bold?: boolean   // terms in bold
+  align?: 'left' | 'center' | 'right' | 'justify' // definitions column (default justify)
+  fontSize?: number
+  fontFamily?: string
+  lineSpacing?: number
+  color?: string
+}
+
+export const DEFAULT_ABBREVIATIONS_TITLE = 'Перелік умовних позначень, символів, одиниць, скорочень і термінів'
+
 // Starts appendix А, Б, … on a new page. Everything after it (until the next
 // appendix) belongs to it: figures/tables/formulas are numbered А.1, А.2, …
 export interface AppendixBlock {
@@ -261,3 +284,4 @@ export type ReportBlock =
   | ColumnsBlock
   | GroupBlock
   | AppendixBlock
+  | AbbreviationsBlock

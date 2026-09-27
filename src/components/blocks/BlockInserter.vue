@@ -22,6 +22,7 @@ const types: { type: ReportBlock['type']; label: string }[] = [
   { type: 'toc', label: '☰ Зміст' },
   { type: 'sources', label: '📚 Джерела' },
   { type: 'appendix', label: '📎 Додаток' },
+  { type: 'abbreviations', label: '🔤 Скорочення' },
   { type: 'columns', label: '▥ Стовпці' },
   { type: 'group', label: '▤ Група' },
   { type: 'pageBreak', label: '⤓ Сторінка' },

@@ -28,6 +28,7 @@ export function blockTypeName(b: ReportBlock): string {
     case 'columns': return 'Стовпці'
     case 'group': return 'Група'
     case 'appendix': return 'Додаток'
+    case 'abbreviations': return 'Скорочення'
   }
 }
 
@@ -60,6 +61,8 @@ export function blockSummary(b: ReportBlock): string {
       return 'нова сторінка'
     case 'appendix':
       return trunc(b.title)
+    case 'abbreviations':
+      return `${b.entries.length} позн.`
   }
 }
 

@@ -14,7 +14,7 @@ import {
   TableOfContents,
 } from 'docx'
 import type { ReportDocument, ReportBlock, ListItem, TableRow as DocTableRow } from '../../types/document'
-import { formatSourceDSTU, resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
+import { DEFAULT_ABBREVIATIONS_TITLE, formatSourceDSTU, resolveHeadingStyle, resolveBodyStyle } from '../../types/document'
 import type { FormulaImage } from '../useFormulaImage'
 import { cmToTwip, ptToHalfPt } from './units'
 import { baseRun, getInlineContext, inlineRuns } from './text-runs'
@@ -141,6 +141,66 @@ export function buildBlock(
         keepLines: true,
       }),
     ]
+  }
+
+  if (block.type === 'abbreviations') {
+    const aCfg = { ...cfg }
+    if (block.fontSize) aCfg.size = ptToHalfPt(block.fontSize)
+    if (block.fontFamily) aCfg.name = block.fontFamily
+    if (block.lineSpacing !== undefined) aCfg.lineSpacing = block.lineSpacing
+    if (block.color) aCfg.color = block.color
+    const spacing = { line: Math.round(aCfg.lineSpacing * 240), lineRule: 'auto' as never }
+
+    const entries = block.entries.filter(e => e.term.trim() || e.definition.trim())
+    if (block.sorted !== false) {
+      // Ukrainian (Cyrillic) terms first, then Latin, then the rest (Greek,
+      // symbols); inline markers don't affect the order.
+      const plain = (t: string) => t.replace(/[*_`=^{}\\]/g, '').trim()
+      const group = (t: string) => (/^\p{Script=Cyrillic}/u.test(t) ? 0 : /^\p{Script=Latin}/u.test(t) ? 1 : 2)
+      entries.sort((a, b) => {
+        const pa = plain(a.term), pb = plain(b.term)
+        return group(pa) - group(pb) || pa.localeCompare(pb, 'uk', { sensitivity: 'base' })
+      })
+    }
+
+    // Two borderless columns: term | "– definition" (wrapped lines stay in
+    // the right column, so the list reads as a clean two-column block).
+    const contentTwips = cmToTwip(21 - s.marginLeft - s.marginRight)
+    const colTwips = [Math.round(contentTwips * 0.25), contentTwips - Math.round(contentTwips * 0.25)]
+    const none = { style: BorderStyle.NONE, size: 0 }
+    const noBorder = { top: none, bottom: none, left: none, right: none }
+    const cell = (children: Paragraph[], i: number) => new TableCell({
+      children,
+      borders: noBorder,
+      width: { size: colTwips[i]!, type: WidthType.DXA },
+    })
+    const rows = entries.map(e => new TableRow({
+      cantSplit: true,
+      children: [
+        cell([new Paragraph({ children: inlineRuns(e.term, aCfg, block.bold ?? false), spacing })], 0),
+        cell([new Paragraph({ children: inlineRuns(`– ${e.definition}`, aCfg), alignment: ALIGN4_MAP[block.align ?? 'justify'], spacing })], 1),
+      ],
+    }))
+
+    const result: BodyEl[] = [
+      new Paragraph({
+        children: inlineRuns(block.title ?? DEFAULT_ABBREVIATIONS_TITLE, aCfg, true),
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing,
+        keepNext: true,
+      }),
+      emptyParagraph(aCfg),
+    ]
+    if (rows.length) {
+      result.push(new Table({
+        rows,
+        width: { size: contentTwips, type: WidthType.DXA },
+        columnWidths: colTwips,
+        borders: { ...noBorder, insideHorizontal: none, insideVertical: none },
+      }))
+    }
+    return result
   }
 
   if (block.type === 'appendix') {
