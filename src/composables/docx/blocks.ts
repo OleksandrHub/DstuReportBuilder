@@ -136,6 +136,9 @@ export function buildBlock(
         alignment: hAlign,
         spacing: { line: Math.round(hCfg.lineSpacing * 240), lineRule: 'auto' as never },
         indent: hIndent,
+        // A heading never ends a page: it moves along with the following text.
+        keepNext: true,
+        keepLines: true,
       }),
     ]
   }
@@ -347,7 +350,7 @@ export function buildBlock(
     } else {
       result.push(emptyParagraph(cfg))
     }
-    result.push(captionParagraph(`${s.listingPrefix} ${num} – ${block.caption}`, cfg))
+    result.push(captionParagraph(`${s.listingPrefix} ${num} – ${block.caption}`, cfg, AlignmentType.LEFT, true))
     // Код — по рядках: кожен рядок окремим параграфом, щоб зберегти
     // всі відступи та пробіли (Word ігнорує "\n" всередині <w:t>).
     const codeLines = (block.code ?? '').replace(/\r\n/g, '\n').split('\n')
@@ -413,6 +416,7 @@ export function buildBlock(
             children: [new ImageRun({ data: bytes, transformation: { width: w, height: h }, type: 'png' })],
             alignment: AlignmentType.CENTER,
             spacing: { line: 360, lineRule: 'auto' as never }, // 1.5
+            keepNext: true, // the picture stays on the same page as its caption
           })
         )
       } catch {
@@ -431,6 +435,7 @@ export function buildBlock(
         children: inlineRuns(`${s.imagePrefix} ${num} – ${block.caption}`, capCfg, block.bold ?? false),
         alignment: ALIGN4_MAP[block.align ?? 'center'] ?? AlignmentType.CENTER,
         spacing: { line: Math.round(capCfg.lineSpacing * 240), lineRule: 'auto' as never },
+        keepLines: true,
       })
     )
     if (!block.noTrailingSpace) result.push(emptyParagraph(cfg))
@@ -540,10 +545,10 @@ export function buildBlock(
 
     chunks.forEach((chunk, ci) => {
       if (ci === 0) {
-        result.push(captionParagraph(`${s.tablePrefix} ${num} – ${block.caption}`, cfg))
+        result.push(captionParagraph(`${s.tablePrefix} ${num} – ${block.caption}`, cfg, AlignmentType.LEFT, true))
       } else {
         result.push(emptyParagraph(cfg))
-        result.push(captionParagraph(`Продовження таблиці ${num} – ${block.caption}`, cfg, AlignmentType.RIGHT))
+        result.push(captionParagraph(`Продовження таблиці ${num} – ${block.caption}`, cfg, AlignmentType.RIGHT, true))
       }
       result.push(new Table({
         rows: [makeHeaderRow(), ...chunk.map(makeDataRow)],

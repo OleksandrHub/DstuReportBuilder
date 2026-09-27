@@ -28,7 +28,14 @@ export function emptyParagraphs(cfg: FontConfig, count: number): Paragraph[] {
   return Array.from({ length: Math.max(0, count) }, () => emptyParagraph(cfg))
 }
 
-export function captionParagraph(text: string, cfg: FontConfig, align: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT): Paragraph {
+// keepNext glues the caption to the object that follows it (table / listing),
+// so a caption is never left alone at the bottom of a page.
+export function captionParagraph(
+  text: string,
+  cfg: FontConfig,
+  align: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT,
+  keepNext = false,
+): Paragraph {
   // Left-aligned captions get the document's first-line indent (like body text,
   // e.g. "Таблиця 1 – ..."). Right/center captions (e.g. continuation) don't.
   const indent = align === AlignmentType.LEFT ? { firstLine: cmToTwip(cfg.paragraphIndent) } : undefined
@@ -37,6 +44,8 @@ export function captionParagraph(text: string, cfg: FontConfig, align: typeof Al
     alignment: align,
     spacing: { line: Math.round(cfg.lineSpacing * 240), lineRule: 'auto' as never },
     indent,
+    keepNext,
+    keepLines: true,
   })
 }
 
