@@ -1,4 +1,4 @@
-import { TextRun } from 'docx'
+import { ShadingType, TextRun } from 'docx'
 
 export interface FontConfig {
   name: string
@@ -14,7 +14,10 @@ export interface RunStyle {
   underline?: boolean
   mono?: boolean
   color?: string // hex without '#', overrides cfg.color for this run
+  highlight?: string // background fill, hex without '#'
 }
+
+const DEFAULT_HIGHLIGHT = 'FFFF00'
 
 export function styledRun(text: string, cfg: FontConfig, st: RunStyle): TextRun {
   return new TextRun({
@@ -25,6 +28,7 @@ export function styledRun(text: string, cfg: FontConfig, st: RunStyle): TextRun 
     italics: st.italic,
     underline: st.underline ? {} : undefined,
     color: st.color ?? cfg.color,
+    shading: st.highlight ? { type: ShadingType.CLEAR, fill: st.highlight, color: 'auto' } : undefined,
   })
 }
 
@@ -35,7 +39,7 @@ export function baseRun(text: string, cfg: FontConfig, bold = false, italic = fa
 // Inline formatting markers. The parser is stateful: a marker toggles its style
 // on/off, so styles nest and combine freely, e.g.
 //   ***bold italic***  →  **_x_**  →  *a `b`*  all work.
-//   **bold**   *italic*   __underline__   `mono`
+//   **bold**   *italic*   __underline__   `mono`   ==highlight (yellow)==
 type BoolStyleKey = 'bold' | 'italic' | 'underline' | 'mono'
 const MARKERS: Array<{ tok: string; key: BoolStyleKey }> = [
   { tok: '**', key: 'bold' },
@@ -44,13 +48,14 @@ const MARKERS: Array<{ tok: string; key: BoolStyleKey }> = [
   { tok: '`', key: 'mono' },
 ]
 
-// Inline color marker: {#RRGGBB|colored text} or {/} alone resets to default.
-// Escape any marker char with a backslash: \*  \_  \`  \{  \}  \\
+// Inline color markers: {#RRGGBB|text colour} and {!#RRGGBB|background fill};
+// 3-digit hex works too, and {!|text} uses the default yellow fill.
+// Escape any marker char with a backslash: \*  \_  \`  \=  \{  \}  \\
 export function inlineRuns(text: string, cfg: FontConfig, baseBold = false): TextRun[] {
   const runs: TextRun[] = []
   const active: RunStyle = { bold: baseBold }
-  // Color is a stack so nested {#..|..} restore the outer color on close.
-  const colorStack: (string | undefined)[] = []
+  // {..|..} groups form a stack so nested groups restore the outer value on close.
+  const groupStack: Array<{ key: 'color' | 'highlight'; prev: string | undefined }> = []
   let buf = ''
 
   const flush = () => {
@@ -76,22 +81,31 @@ export function inlineRuns(text: string, cfg: FontConfig, baseBold = false): Tex
       buf += ch; i += 1; continue
     }
 
-    // Open color: {#RRGGBB| or {#RGB|
-    const colorOpen = /^\{#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\|/.exec(text.slice(i))
-    if (colorOpen) {
+    // Open group: {#RGB| (text colour) or {!#RGB| / {!| (background fill)
+    const groupOpen = /^\{(!?)(?:#([0-9a-fA-F]{6}|[0-9a-fA-F]{3}))?\|/.exec(text.slice(i))
+    if (groupOpen && (groupOpen[1] || groupOpen[2])) {
       flush()
-      let hex = colorOpen[1]!.toUpperCase()
+      const key = groupOpen[1] ? 'highlight' : 'color'
+      let hex = groupOpen[2]?.toUpperCase() ?? DEFAULT_HIGHLIGHT
       if (hex.length === 3) hex = hex.split('').map(c => c + c).join('')
-      colorStack.push(active.color)
-      active.color = hex
-      i += colorOpen[0].length
+      groupStack.push({ key, prev: active[key] })
+      active[key] = hex
+      i += groupOpen[0].length
       continue
     }
-    // Close color: }
-    if (ch === '}' && colorStack.length) {
+    // Close group: }
+    if (ch === '}' && groupStack.length) {
       flush()
-      active.color = colorStack.pop()
+      const { key, prev } = groupStack.pop()!
+      active[key] = prev
       i += 1
+      continue
+    }
+    // Toggle yellow highlight: ==text==
+    if (text.startsWith('==', i)) {
+      flush()
+      active.highlight = active.highlight ? undefined : DEFAULT_HIGHLIGHT
+      i += 2
       continue
     }
 

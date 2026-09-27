@@ -26,11 +26,11 @@ A Vue 3 web app for composing academic lab reports formatted to the Ukrainian
 ## Getting started
 
 ```sh
-npm install
-npm run dev          # dev server (http://localhost:5173)
-npm run build        # type-check + production build into dist/
-npm run preview      # serve the production build locally
-npm run lint         # oxlint + eslint
+pnpm install
+pnpm run dev          # dev server (http://localhost:5173)
+pnpm run build        # type-check + production build into dist/
+pnpm run preview      # serve the production build locally
+pnpm run lint         # oxlint + eslint
 ```
 
 Requires Node `^22.18.0 || >=24.12.0`.

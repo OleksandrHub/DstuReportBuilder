@@ -431,7 +431,7 @@ watch(mobilePane, (pane) => {
               <button @click="store.addBlock('spacer')">↵ Порожній рядок</button>
             </div>
             <button class="btn-intro-blocks" @click="store.addIntroBlocks()">
-              + Тема / Мета / Висновки / Виконання / Варіант
+              + Тема / Мета / Варіант / Виконання / Висновки
             </button>
           </div>
         </div>

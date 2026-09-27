@@ -494,8 +494,11 @@ export const useReportStore = defineStore('report', () => {
     const introBlocks: ReportBlock[] = [
       { id: generateId(), type: 'paragraph', text: '**Тема:** ', bold: false, align: 'justify' },
       { id: generateId(), type: 'paragraph', text: '**Мета:** ', bold: false, align: 'justify' },
+      { id: generateId(), type: 'spacer', lines: 1 },
       { id: generateId(), type: 'paragraph', text: 'Варіант №1', bold: false, align: 'center' },
+      { id: generateId(), type: 'spacer', lines: 1 },
       { id: generateId(), type: 'paragraph', text: 'Виконання роботи:', bold: true, align: 'center' },
+      { id: generateId(), type: 'spacer', lines: 1 },
       { id: generateId(), type: 'paragraph', text: '**Висновки:** ', bold: false, align: 'justify' },
     ]
     doc.blocks = [...introBlocks, ...doc.blocks]

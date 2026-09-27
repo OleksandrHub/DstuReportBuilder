@@ -348,7 +348,6 @@ export function buildBlock(
       result.push(emptyParagraph(cfg))
     }
     result.push(captionParagraph(`${s.listingPrefix} ${num} – ${block.caption}`, cfg))
-    result.push(emptyParagraph(cfg))
     // Код — по рядках: кожен рядок окремим параграфом, щоб зберегти
     // всі відступи та пробіли (Word ігнорує "\n" всередині <w:t>).
     const codeLines = (block.code ?? '').replace(/\r\n/g, '\n').split('\n')
@@ -413,6 +412,7 @@ export function buildBlock(
           new Paragraph({
             children: [new ImageRun({ data: bytes, transformation: { width: w, height: h }, type: 'png' })],
             alignment: AlignmentType.CENTER,
+            spacing: { line: 360, lineRule: 'auto' as never }, // 1.5
           })
         )
       } catch {
@@ -545,7 +545,6 @@ export function buildBlock(
         result.push(emptyParagraph(cfg))
         result.push(captionParagraph(`Продовження таблиці ${num} – ${block.caption}`, cfg, AlignmentType.RIGHT))
       }
-      result.push(emptyParagraph(cfg))
       result.push(new Table({
         rows: [makeHeaderRow(), ...chunk.map(makeDataRow)],
         width: tableWidth,

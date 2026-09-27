@@ -1,8 +1,10 @@
 import {
   Document,
+  Header,
+  Footer,
   Packer,
+  PageBreak,
   Paragraph,
-  SectionType,
 } from 'docx'
 import type { ReportDocument, ReportBlock } from '../../types/document'
 import { renderFormulaPng, type FormulaImage } from '../useFormulaImage'
@@ -87,11 +89,12 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
   }
 
   const startPage = s.pageNumberStart ?? 1
+  const hasTitle = titleChildren.length > 0
   // Title page shows startPage; the first body page is the next one (continuous).
-  const bodyFirstPage = startPage + 1
-  // Each section's PAGE field caches the number of the page it first appears on.
-  const titleHeader = buildHeader(s.header, startPage)
-  const titleFooter = buildFooter(s.footer, startPage)
+  const bodyFirstPage = hasTitle ? startPage + 1 : startPage
+  // Each header/footer's PAGE field caches the number of the page it first appears on.
+  const titleHeader = s.differentFirstPage ? new Header({ children: [] }) : buildHeader(s.header, startPage)
+  const titleFooter = s.differentFirstPage ? new Footer({ children: [] }) : buildFooter(s.footer, startPage)
   const bodyHeader = buildHeader(s.header, bodyFirstPage)
   const bodyFooter = buildFooter(s.footer, bodyFirstPage)
 
@@ -127,8 +130,8 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
       }))
     : []
 
-  // Title page is its own section so the body starts on a fresh page WITHOUT
-  // an extra empty paragraph. The body section uses nextPage to break cleanly.
+  // Title and body share one section, separated by a plain (visible) page
+  // break. The title page gets its own header/footer via "different first page".
   const docxDoc = new Document({
     // Ask the editor to recompute fields (TOC, page numbers) when the file opens.
     features: { updateFields: true },
@@ -146,29 +149,21 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
     sections: [
       {
         properties: {
+          titlePage: hasTitle,
           page: {
             margin: pageMargin,
-            // First page of the document carries the configured start number.
             pageNumbers: { start: startPage },
           },
         },
-        // The title section has no header/footer when differentFirstPage is on.
-        headers: titleHeader && !s.differentFirstPage ? { default: titleHeader } : undefined,
-        footers: titleFooter && !s.differentFirstPage ? { default: titleFooter } : undefined,
-        children: [...titleChildren],
-      },
-      {
-        properties: {
-          type: SectionType.NEXT_PAGE,
-          page: {
-            // No pageNumbers.start here: numbering flows continuously from the
-            // title page, so the first body page is startPage + 1.
-            margin: pageMargin,
-          },
-        },
-        headers: bodyHeader ? { default: bodyHeader } : undefined,
-        footers: bodyFooter ? { default: bodyFooter } : undefined,
-        children: [...bodyChildren],
+        headers: hasTitle
+          ? { default: bodyHeader, first: titleHeader }
+          : bodyHeader ? { default: bodyHeader } : undefined,
+        footers: hasTitle
+          ? { default: bodyFooter, first: titleFooter }
+          : bodyFooter ? { default: bodyFooter } : undefined,
+        children: hasTitle
+          ? [...titleChildren, new Paragraph({ children: [new PageBreak()] }), ...bodyChildren]
+          : [...bodyChildren],
       },
     ],
   })
