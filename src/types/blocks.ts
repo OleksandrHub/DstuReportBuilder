@@ -223,6 +223,28 @@ export interface GroupBlock {
   blocks: ReportBlock[]
 }
 
+// Starts appendix А, Б, … on a new page. Everything after it (until the next
+// appendix) belongs to it: figures/tables/formulas are numbered А.1, А.2, …
+export interface AppendixBlock {
+  id: string
+  type: 'appendix'
+  title: string
+  label?: string // {ref:label} in text → the appendix letter
+}
+
+// ДСТУ 3008:2015: Ukrainian capitals except Ґ, Є, З, І, Ї, Й, О, Ч, Ь.
+export const APPENDIX_LETTERS = [
+  'А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ж', 'И', 'К', 'Л', 'М', 'Н',
+  'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц', 'Ш', 'Щ', 'Ю', 'Я',
+]
+
+/** Letter of the n-th appendix (0-based); past Я continues as А1, Б1, … */
+export function appendixLetter(index: number): string {
+  const n = APPENDIX_LETTERS.length
+  const round = Math.floor(index / n)
+  return APPENDIX_LETTERS[index % n]! + (round > 0 ? String(round) : '')
+}
+
 export type ReportBlock =
   | ParagraphBlock
   | TextBlock
@@ -238,3 +260,4 @@ export type ReportBlock =
   | SourcesBlock
   | ColumnsBlock
   | GroupBlock
+  | AppendixBlock

@@ -438,6 +438,8 @@ export const useReportStore = defineStore('report', () => {
       block = { id: generateId(), type: 'pageBreak' }
     } else if (type === 'spacer') {
       block = { id: generateId(), type: 'spacer', lines: 1 }
+    } else if (type === 'appendix') {
+      block = { id: generateId(), type: 'appendix', title: '' }
     } else if (type === 'toc') {
       block = { id: generateId(), type: 'toc', title: 'Зміст' }
     } else if (type === 'sources') {
@@ -547,6 +549,8 @@ export const useReportStore = defineStore('report', () => {
       } else if (b.type === 'formula') {
         if (b.caption !== undefined) b.caption = apply(b.caption)
         b.referenceText = apply(b.referenceText)
+      } else if (b.type === 'appendix') {
+        b.title = apply(b.title)!
       } else if (b.type === 'toc') {
         if (b.title !== undefined) b.title = apply(b.title)
       }

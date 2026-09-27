@@ -425,6 +425,7 @@ watch(mobilePane, (pane) => {
               <button @click="store.addBlock('formula')">∑ Формула</button>
               <button @click="store.addBlock('toc')">☰ Зміст</button>
               <button @click="store.addBlock('sources')">📚 Джерела</button>
+              <button @click="store.addBlock('appendix')">📎 Додаток</button>
               <button @click="store.addBlock('columns')">▥ Стовпці</button>
               <button @click="store.addBlock('group')">▤ Група</button>
               <button @click="store.addBlock('pageBreak')">⤓ Нова сторінка</button>

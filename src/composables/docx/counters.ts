@@ -1,4 +1,5 @@
 import type { NumberingSchemes } from '../../types/document'
+import { appendixLetter } from '../../types/document'
 import { refKey } from './text-runs'
 
 // ===== Caption numbering =====
@@ -9,6 +10,7 @@ import { refKey } from './text-runs'
 type NumKind = 'image' | 'code' | 'table' | 'formula'
 export interface Counters {
   bumpChapter(): void                       // call on every H2 heading
+  startAppendix(label?: string): string     // call on every appendix; returns its letter
   next(kind: NumKind, label?: string): string // formatted number; records it under label
   labels: Map<string, string>               // refKey(label) → number, for {ref:label}
 }
@@ -19,8 +21,12 @@ export function makeCounters(schemes: NumberingSchemes): Counters {
   let chapter = 0
   const items: Record<NumKind, number> = { image: 0, code: 0, table: 0, formula: 0 }
   const labels = new Map<string, string>()
+  // Inside an appendix every type is numbered "<letter>.<n>" regardless of its
+  // scheme, restarting in each appendix (ДСТУ 3008:2015).
+  let appendix = -1
   const format = (kind: NumKind): string => {
     const m = items[kind]
+    if (appendix >= 0) return `${appendixLetter(appendix)}.${m}`
     const scheme = schemes[kind]
     if (scheme === 'plain') return String(m)
     const ch = scheme === 'sectioned' ? Math.max(1, chapter) : 1
@@ -29,11 +35,19 @@ export function makeCounters(schemes: NumberingSchemes): Counters {
   return {
     labels,
     bumpChapter() {
+      if (appendix >= 0) return
       chapter++
       // Reset only the item counters whose scheme is section-based.
       ;(['image', 'code', 'table', 'formula'] as NumKind[]).forEach((k) => {
         if (schemes[k] === 'sectioned') items[k] = 0
       })
+    },
+    startAppendix(label?: string): string {
+      appendix++
+      ;(['image', 'code', 'table', 'formula'] as NumKind[]).forEach((k) => { items[k] = 0 })
+      const letter = appendixLetter(appendix)
+      if (label?.trim()) labels.set(refKey(label), letter)
+      return letter
     },
     next(kind: NumKind, label?: string): string {
       items[kind]++

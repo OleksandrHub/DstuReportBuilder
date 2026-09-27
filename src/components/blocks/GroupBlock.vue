@@ -56,6 +56,7 @@ const innerTypes: { type: ReportBlock['type']; label: string }[] = [
   { type: 'formula', label: 'Формула' },
   { type: 'toc', label: 'Зміст' },
   { type: 'sources', label: 'Джерела' },
+  { type: 'appendix', label: 'Додаток' },
   { type: 'columns', label: 'Стовпці' },
   { type: 'pageBreak', label: 'Нова сторінка' },
   { type: 'spacer', label: 'Відступ' },

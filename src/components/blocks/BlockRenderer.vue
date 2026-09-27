@@ -15,6 +15,7 @@ import TocBlock from './TocBlock.vue'
 import SourcesBlock from './SourcesBlock.vue'
 import ColumnsBlock from './ColumnsBlock.vue'
 import GroupBlockEditor from './GroupBlock.vue'
+import AppendixBlock from './AppendixBlock.vue'
 
 // Renders one body block of any type and re-emits editor events WITHOUT the
 // block id — the parent (document list or group) supplies the context.
@@ -154,6 +155,16 @@ const emit = defineEmits<{
   <ColumnsBlock
     v-else-if="block.type === 'columns'"
     :block="block"
+    @update="emit('update', $event)"
+    @remove="emit('remove')"
+    @duplicate="emit('duplicate')"
+    @move-up="emit('moveUp')"
+    @move-down="emit('moveDown')"
+  />
+  <AppendixBlock
+    v-else-if="block.type === 'appendix'"
+    :block="block"
+    :index="store.getBlockIndex(block.id, 'appendix')"
     @update="emit('update', $event)"
     @remove="emit('remove')"
     @duplicate="emit('duplicate')"

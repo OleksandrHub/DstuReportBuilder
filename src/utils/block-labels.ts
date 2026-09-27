@@ -27,6 +27,7 @@ export function blockTypeName(b: ReportBlock): string {
     case 'sources': return 'Джерела'
     case 'columns': return 'Стовпці'
     case 'group': return 'Група'
+    case 'appendix': return 'Додаток'
   }
 }
 
@@ -57,6 +58,8 @@ export function blockSummary(b: ReportBlock): string {
       return `${b.lines ?? 1} рядк.`
     case 'pageBreak':
       return 'нова сторінка'
+    case 'appendix':
+      return trunc(b.title)
   }
 }
 

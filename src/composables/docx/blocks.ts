@@ -143,6 +143,29 @@ export function buildBlock(
     ]
   }
 
+  if (block.type === 'appendix') {
+    const letter = counters.startAppendix(block.label)
+    // "Додаток А" over the title, centred, on a new page (ДСТУ 3008:2015).
+    // Heading 1 so it shows up in the table of contents.
+    const g = resolveHeadingStyle(s, 1)
+    const aCfg = { ...cfg, name: g.fontFamily, size: ptToHalfPt(g.fontSize), lineSpacing: g.lineSpacing, color: g.color || undefined }
+    return [
+      new Paragraph({
+        children: [
+          ...inlineRuns(`Додаток ${letter}`, aCfg, g.bold),
+          ...(block.title.trim() ? [new TextRun({ break: 1 }), ...inlineRuns(block.title, aCfg, g.bold)] : []),
+        ],
+        heading: HeadingLevel.HEADING_1,
+        alignment: AlignmentType.CENTER,
+        spacing: { line: Math.round(aCfg.lineSpacing * 240), lineRule: 'auto' as never },
+        pageBreakBefore: true,
+        keepNext: true,
+        keepLines: true,
+      }),
+      emptyParagraph(cfg),
+    ]
+  }
+
   if (block.type === 'pageBreak') {
     return [new Paragraph({ children: [new PageBreak()] })]
   }
