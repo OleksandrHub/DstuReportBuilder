@@ -59,6 +59,7 @@ export interface DocumentSettings {
   pageNumberStart: number     // number assigned to the very first (title) page
   numbering: NumberingSchemes // per-type numbering schemes
   formulaPrefix: string
+  autoNbsp: boolean // non-breaking spaces in "рис. 5", "5 кг", "Т. Г. Шевченко", before "–"
 }
 
 // ---------------------------------------------------------------------------

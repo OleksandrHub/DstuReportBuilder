@@ -100,6 +100,7 @@ export async function buildDocxBlob(doc: ReportDocument, forPreview = false): Pr
   const entries = sources?.entries ?? []
   const ctx: InlineContext = {
     refs: new Map(),
+    nbsp: s.autoNbsp !== false,
     cite: {
       keys: new Map(),
       numbers: new Map(entries.map((e, i) => [e.id, i + 1])),

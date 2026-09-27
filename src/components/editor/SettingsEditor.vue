@@ -38,7 +38,7 @@ function doApplyStyles() {
   )
 }
 
-function update(field: string, value: string | number) {
+function update(field: string, value: string | number | boolean) {
   store.updateSettings({ [field]: value } as never)
 }
 
@@ -275,6 +275,15 @@ function goToSection(id: string) {
         @update:model-value="update('paragraphIndent', $event ?? 1.25)"
       />
     </div>
+
+    <label class="checkbox-row">
+      <input
+        type="checkbox"
+        :checked="s.autoNbsp !== false"
+        @change="update('autoNbsp', ($event.target as HTMLInputElement).checked)"
+      />
+      <span>Нерозривні пробіли: «рис. 5», «№ 3», «5 кг», «Т. Г. Шевченко», перед «–»</span>
+    </label>
 
     </SettingsSection>
 

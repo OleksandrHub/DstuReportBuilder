@@ -1,4 +1,5 @@
 import { ShadingType, TextRun } from 'docx'
+import { addNbsp } from './nbsp'
 
 export interface FontConfig {
   name: string
@@ -52,6 +53,7 @@ const MARKERS: Array<{ tok: string; key: BoolStyleKey }> = [
 // for the duration of one (synchronous) build and clears it afterwards.
 export interface InlineContext {
   refs: Map<string, string> // refKey(label) → number of the labelled object
+  nbsp: boolean             // settings.autoNbsp
   cite: {
     keys: Map<string, string>    // refKey(entry key) or "N" (list position) → entry id
     numbers: Map<string, number> // entry id → number in the sources list
@@ -107,6 +109,7 @@ export function refKey(label: string): string {
 // 3-digit hex works too, and {!|text} uses the default yellow fill.
 // Escape any marker char with a backslash: \*  \_  \`  \=  \{  \}  \\
 export function inlineRuns(text: string, cfg: FontConfig, baseBold = false): TextRun[] {
+  if (context?.nbsp) text = addNbsp(text)
   const runs: TextRun[] = []
   const active: RunStyle = { bold: baseBold }
   // {..|..} groups form a stack so nested groups restore the outer value on close.

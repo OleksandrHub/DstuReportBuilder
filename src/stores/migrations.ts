@@ -53,6 +53,9 @@ export function migrateDocuments(rawDocs: ReportDocument[]): void {
     if (doc.settings && doc.settings.formulaPrefix === undefined) {
       doc.settings.formulaPrefix = 'Формула'
     }
+    if (doc.settings && doc.settings.autoNbsp === undefined) {
+      doc.settings.autoNbsp = true
+    }
     // Migrate: add global heading/body text styles to old documents.
     // bodyText inherits the doc's own base values so appearance is unchanged.
     if (doc.settings && !doc.settings.headingStyles) {

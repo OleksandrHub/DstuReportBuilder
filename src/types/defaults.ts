@@ -69,6 +69,7 @@ export const DEFAULT_SETTINGS: DocumentSettings = {
   pageNumberStart: 1,
   numbering: { image: 'plain', table: 'plain', code: 'plain', formula: 'plain' },
   formulaPrefix: 'Формула',
+  autoNbsp: true,
 }
 
 export const DEFAULT_TITLE_PAGE: TitlePageData = {
